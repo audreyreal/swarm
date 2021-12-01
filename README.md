@@ -8,4 +8,5 @@ maybe some other things too idk
 - switch to dictionary for nation list
 - add tab for putting up tags and poll raiding
 - generalize currently used functions
+- add icon
 - ?? possibly stop storing passwords in plaintext ??
