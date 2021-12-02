@@ -9,4 +9,6 @@ maybe some other things too idk
 - add tab for putting up tags and poll raiding
 - generalize currently used functions
 - add icon
+- create binaries 
+- publish instructions on creating binaries in accordance w/ GPL
 - ?? possibly stop storing passwords in plaintext ??
