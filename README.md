@@ -11,3 +11,4 @@ maybe some other things too idk
 - [ ] add icon
 - [ ] create binaries 
 - [ ] publish instructions on creating binaries in accordance w/ GPL
+- [ ] add puppet creator because NS++ is practically abandoned at this point
