@@ -12,3 +12,4 @@ maybe some other things too idk
 - [ ] create binaries 
 - [ ] publish instructions on creating binaries in accordance w/ GPL
 - [ ] add puppet creator because NS++ is practically abandoned at this point
+- [ ] functionality to find your wa
