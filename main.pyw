@@ -1,5 +1,6 @@
-import json
+import json, traceback
 import PySimpleGUI as sg
+import requests
 import prep
 
 
@@ -37,7 +38,7 @@ def gui():
                     [sg.Tab("Polls", poll_layout)],
                 ],
                 enable_events=True,
-                key="-CURRENT TAB-"
+                key="-CURRENT TAB-",
             )
         ]
     ]
@@ -46,23 +47,40 @@ def gui():
 
 
 def main():
-    with open("config.json", "r", encoding="utf-8") as raw:
-        config = json.load(raw)
+    try: # parse the nation config, try to account for as many fuckups as possible
+        with open("config.json", "r", encoding="utf-8") as json_file:
+            config = json.load(json_file)
+    except FileNotFoundError:
+        with open("config.json", "w", encoding="utf-8") as json_file:
+            json_file.write(requests.get("https://raw.githubusercontent.com/sw33ze/puppet-manager/main/config.json").text)
+            sg.popup_error(
+                "No JSON File! Template created, fill it in with your nations!"
+            )
+            return
+    except json.decoder.JSONDecodeError:
+        sg.popup_error("JSON file is not valid!", traceback.format_exc())
+        return # end nation config parsing
     nation_dict = config["nations"]
     nations = list(nation_dict.keys())
     window = gui()
     nation_index = 0
-    while True:
-        event, values = window.read()
-        print(event)
-        if event == sg.WIN_CLOSED:  # da window is closed
-            window.close()
-            break
-        match values["-CURRENT TAB-"]:
-            case "Prep":
-                prep_thread(nation_dict, nations, window, nation_index)
-            case "Polls":
-                sg.Print("Not devved!")
+    try:
+        while True:
+            event, values = window.read()
+            if event == sg.WIN_CLOSED:  # da window is closed
+                window.close()
+                break
+            match values["-CURRENT TAB-"]:
+                case "Prep":
+                    prep_thread(nation_dict, nations, window, nation_index)
+                case "Polls":
+                    sg.Print("Not devved!")
+    except Exception as e:
+        tb = traceback.format_exc()
+        sg.Print(e, tb)
+        sg.popup_error(
+            "something went wrong copy the box behind this and send it to sweeze pls"
+        )
 
 
 def prep_thread(nation_dict, nations, window, nation_index):
@@ -140,7 +158,6 @@ def prep_thread(nation_dict, nations, window, nation_index):
                         window["-ACTION-"].update(disabled=False)
                         break
             window["-ACTION-"].update(disabled=False)
-
 
 
 if __name__ == "__main__":
