@@ -10,6 +10,7 @@ pls format your code with black beforehand, basically my only requirement ._.
 - [x] switch to dictionary for nation list
 - [x] add tab for poll raiding
 - [ ] add tab for putting up tags (this is gonna suck so much i hate nationstates)
+- [ ] add tab for changing nation fields and flag
 - [x] generalize currently used functions
 - [ ] add icon
 - [ ] create binaries
