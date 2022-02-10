@@ -51,7 +51,7 @@ def main():
             config = json.load(json_file)
     except FileNotFoundError:
         with open("config.json", "w", encoding="utf-8") as json_file:
-            json_file.write(requests.get("https://raw.githubusercontent.com/sw33ze/puppet-manager/main/config.json").text)
+            json_file.write(requests.get("https://pastebin.com/raw/JwiN2HWN").text)
             sg.popup_error(
                 "No JSON File! Template created, fill it in with your nations!"
             )
