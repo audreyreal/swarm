@@ -130,7 +130,7 @@ def polls_thread(nation_dict, nations, window, nation_index):
                         chk = values["-LOGIN DONE-"][1]
                         window["-POLLACTION-"].update("Vote")
                 case "-VOTE-":
-                    window["-OUT-"].update(f"Voted: {current_nation}")
+                    window["-POLLOUT-"].update(f"Voted: {current_nation}")
                     window["-POLLACTION-"].update("Login")
 
                 case "-CURRENT TAB-":
