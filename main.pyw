@@ -3,9 +3,14 @@ import PySimpleGUI as sg
 import requests
 import prep, polls
 
+
 def gui():
     sg.theme("Reddit")
-    sg.set_options(suppress_raise_key_errors=False, suppress_error_popups=False, suppress_key_guessing=False)
+    sg.set_options(
+        suppress_raise_key_errors=False,
+        suppress_error_popups=False,
+        suppress_key_guessing=False,
+    )
     prep_layout = [
         [sg.Text("Main Nation:"), sg.Input(key="-MAIN-")],
         [sg.Text("JP:"), sg.Input(key="-JP-", size=(38, 1))],
@@ -46,7 +51,7 @@ def gui():
 
 
 def main():
-    try: # parse the nation config, try to account for as many fuckups as possible
+    try:  # parse the nation config, try to account for as many fuckups as possible
         with open("config.json", "r", encoding="utf-8") as json_file:
             config = json.load(json_file)
     except FileNotFoundError:
@@ -58,7 +63,7 @@ def main():
             return
     except json.decoder.JSONDecodeError:
         sg.popup_error("JSON file is not valid!", traceback.format_exc())
-        return # end nation config parsing
+        return  # end nation config parsing
     nation_dict = config["nations"]
     nations = list(nation_dict.keys())
     window = gui()
@@ -80,6 +85,7 @@ def main():
         sg.popup_error(
             "something went wrong copy the box behind this and send it to sweeze pls"
         )
+
 
 def polls_thread(nation_dict, nations, window, nation_index):
     while True:
@@ -112,7 +118,8 @@ def polls_thread(nation_dict, nations, window, nation_index):
                         )
                     case "Vote":
                         window.perform_long_operation(
-                            lambda: polls.vote(pin, chk, poll_id, choice, headers), "-VOTE-"
+                            lambda: polls.vote(pin, chk, poll_id, choice, headers),
+                            "-VOTE-",
                         )
         # respond to threads!
         elif event is not None:
@@ -138,6 +145,7 @@ def polls_thread(nation_dict, nations, window, nation_index):
                         window["-POLLACTION-"].update(disabled=False)
                         return
             window["-POLLACTION-"].update(disabled=False)
+
 
 def prep_thread(nation_dict, nations, window, nation_index):
     while True:
