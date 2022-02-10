@@ -21,7 +21,7 @@ def login(nation, password, headers):
         soup = BeautifulSoup(response.text, "html.parser")
         chk = soup.find("input", {"name": "chk"}).attrs["value"]
         pin = response.headers["Set-Cookie"].split("; ")[0].split("=")[1]
-    except KeyError:
+    except:
         return "Login failed!"
 
     return (pin, chk)

@@ -1,12 +1,11 @@
 import json, traceback
 import PySimpleGUI as sg
 import requests
-import prep
-
+import prep, polls
 
 def gui():
     sg.theme("Reddit")
-
+    sg.set_options(suppress_raise_key_errors=False, suppress_error_popups=False, suppress_key_guessing=False)
     prep_layout = [
         [sg.Text("Main Nation:"), sg.Input(key="-MAIN-")],
         [sg.Text("JP:"), sg.Input(key="-JP-", size=(38, 1))],
@@ -17,16 +16,16 @@ def gui():
     ]
 
     poll_layout = [
-        [sg.Text("Main Nation:"), sg.Input(key="-MAIN-")],
+        [sg.Text("Main Nation:"), sg.Input(key="-POLLMAIN-")],
         [
             sg.Text("Poll ID:"),
             sg.Input(key="-POLL-", size=(7, 1)),
             sg.Text("Option:"),
-            sg.Input(key="-OPTION-", size=(2, 1)),
+            sg.Input(key="-POLLOPTION-", size=(2, 1)),
         ],
         [
-            sg.Button("Login", key="-ACTION-", size=(12, 1)),
-            sg.Text("Not logged into any nation!", key="-OUT-"),
+            sg.Button("Login", key="-POLLACTION-", size=(12, 1)),
+            sg.Text("Not logged into any nation!", key="-POLLOUT-"),
         ],
     ]
 
@@ -66,7 +65,7 @@ def main():
     nation_index = 0
     try:
         while True:
-            event, values = window.read()
+            event, values = window.read(timeout=100)
             if event == sg.WIN_CLOSED:  # da window is closed
                 window.close()
                 break
@@ -74,7 +73,7 @@ def main():
                 case "Prep":
                     prep_thread(nation_dict, nations, window, nation_index)
                 case "Polls":
-                    sg.Print("Not devved!")
+                    polls_thread(nation_dict, nations, window, nation_index)
     except Exception as e:
         tb = traceback.format_exc()
         sg.Print(e, tb)
@@ -82,6 +81,63 @@ def main():
             "something went wrong copy the box behind this and send it to sweeze pls"
         )
 
+def polls_thread(nation_dict, nations, window, nation_index):
+    while True:
+        event, values = window.read()
+        if event == sg.WIN_CLOSED:  # da window is closed
+            window.close()
+            break
+
+        if event == "-POLLACTION-":  # did u click the button to do the things
+            main_nation = values["-POLLMAIN-"]
+            poll_id = values["-POLL-"]
+            choice = values["-POLLOPTION-"]
+            current_action = window["-POLLACTION-"].get_text()
+            current_nation = nations[nation_index]
+            current_password = nation_dict[current_nation]
+            if main_nation == "" or poll_id == "" or choice == "":
+                sg.popup("Please enter a nation, poll ID, and poll choice.")
+            else:
+                window["-POLLACTION-"].update(disabled=True)
+                headers = {
+                    "User-Agent": f"Puppet Manager devved by nation=sweeze in use by nation={main_nation}",
+                }
+                match current_action:  # lets go python 3.10 i love switch statements
+                    case "Login":
+                        window.perform_long_operation(
+                            lambda: polls.login(
+                                current_nation, current_password, headers, poll_id
+                            ),
+                            "-LOGIN DONE-",
+                        )
+                    case "Vote":
+                        window.perform_long_operation(
+                            lambda: polls.vote(pin, chk, poll_id, choice, headers), "-VOTE-"
+                        )
+        # respond to threads!
+        elif event is not None:
+            match event:
+                case "-LOGIN DONE-":
+                    if values["-LOGIN DONE-"] == "Out of nations!":
+                        window["-POLLOUT-"].update("No more nations!")
+                    elif values["-LOGIN DONE-"] == "Login failed!":
+                        window["-POLLOUT-"].update("Login failed!")
+                        nation_index += 1
+                    else:
+                        window["-POLLOUT-"].update(f"Logged in: {current_nation}")
+                        nation_index += 1
+                        pin = values["-LOGIN DONE-"][0]
+                        chk = values["-LOGIN DONE-"][1]
+                        window["-POLLACTION-"].update("Vote")
+                case "-VOTE-":
+                    window["-OUT-"].update(f"Voted: {current_nation}")
+                    window["-POLLACTION-"].update("Login")
+
+                case "-CURRENT TAB-":
+                    if values["-CURRENT TAB-"] != "Polls":
+                        window["-POLLACTION-"].update(disabled=False)
+                        return
+            window["-POLLACTION-"].update(disabled=False)
 
 def prep_thread(nation_dict, nations, window, nation_index):
     while True:
@@ -154,9 +210,9 @@ def prep_thread(nation_dict, nations, window, nation_index):
                     window["-ACTION-"].update("Login")
 
                 case "-CURRENT TAB-":
-                    if values["-CURRENT TAB-"] == "Polls":
+                    if values["-CURRENT TAB-"] != "Prep":
                         window["-ACTION-"].update(disabled=False)
-                        break
+                        return
             window["-ACTION-"].update(disabled=False)
 
 
