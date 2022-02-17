@@ -131,7 +131,9 @@ def polls_thread(nation_dict, nations, window, nation_index):
                         window["-POLLOUT-"].update("Login failed!")
                         nation_index += 1
                     else:
-                        prep_tab = window["-CURRENT TAB-"].find_key_from_tab_name("Prep")
+                        prep_tab = window["-CURRENT TAB-"].find_key_from_tab_name(
+                            "Prep"
+                        )
                         window[prep_tab].update(disabled=True)
                         window["-POLLOUT-"].update(f"Logged in: {current_nation}")
                         nation_index += 1
@@ -202,7 +204,9 @@ def prep_thread(nation_dict, nations, window, nation_index):
                         window["-OUT-"].update("Login failed!")
                         nation_index += 1
                     else:
-                        polls_tab = window["-CURRENT TAB-"].find_key_from_tab_name("Polls")
+                        polls_tab = window["-CURRENT TAB-"].find_key_from_tab_name(
+                            "Polls"
+                        )
                         window[polls_tab].update(disabled=True)
                         window["-OUT-"].update(f"Logged in: {current_nation}")
                         pin = values["-LOGIN DONE-"][0]
