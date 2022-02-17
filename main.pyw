@@ -131,6 +131,8 @@ def polls_thread(nation_dict, nations, window, nation_index):
                         window["-POLLOUT-"].update("Login failed!")
                         nation_index += 1
                     else:
+                        prep_tab = window["-CURRENT TAB-"].find_key_from_tab_name("Prep")
+                        window[prep_tab].update(disabled=True)
                         window["-POLLOUT-"].update(f"Logged in: {current_nation}")
                         nation_index += 1
                         pin = values["-LOGIN DONE-"][0]
@@ -138,6 +140,8 @@ def polls_thread(nation_dict, nations, window, nation_index):
                         window["-POLLACTION-"].update("Vote")
                 case "-VOTE-":
                     window["-POLLOUT-"].update(f"Voted: {current_nation}")
+                    prep_tab = window["-CURRENT TAB-"].find_key_from_tab_name("Prep")
+                    window[prep_tab].update(disabled=False)
                     window["-POLLACTION-"].update("Login")
 
                 case "-CURRENT TAB-":
@@ -198,6 +202,8 @@ def prep_thread(nation_dict, nations, window, nation_index):
                         window["-OUT-"].update("Login failed!")
                         nation_index += 1
                     else:
+                        polls_tab = window["-CURRENT TAB-"].find_key_from_tab_name("Polls")
+                        window[polls_tab].update(disabled=True)
                         window["-OUT-"].update(f"Logged in: {current_nation}")
                         pin = values["-LOGIN DONE-"][0]
                         chk = values["-LOGIN DONE-"][1]
@@ -215,6 +221,7 @@ def prep_thread(nation_dict, nations, window, nation_index):
                 case "-MOVED TO JP-":
                     window["-OUT-"].update(f"Moved: {current_nation}")
                     nation_index += 1
+                    window[polls_tab].update(disabled=False)
                     window["-ACTION-"].update("Login")
 
                 case "-CURRENT TAB-":
