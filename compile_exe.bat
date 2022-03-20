@@ -1,2 +1,1 @@
-pyinstaller main.pyw --onefile
-pause
+pyinstaller main.pyw --onefile --clean -n swarm.exe
