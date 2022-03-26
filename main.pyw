@@ -3,7 +3,8 @@ import PySimpleGUI as sg
 import requests
 import prep, polls
 
-VERSION = "1.0.0" # VERY IMPORTANT TO CHANGE EVERY UPDATE!
+VERSION = "1.0.1"  # VERY IMPORTANT TO CHANGE EVERY UPDATE!
+
 
 def gui():
     sg.theme("Reddit")
@@ -16,16 +17,18 @@ def gui():
     try:
         with open("swarm.png", "rb") as f:
             swarm_image = base64.b64encode(f.read())
-    except FileNotFoundError: # in binaries this will not work but if i just download the image it will
-        swarm_image = requests.get("https://gist.githubusercontent.com/sw33ze/c0ec6fca37a69ff1a90f6847affd3c5f/raw/818c73cf742e1356018cf3a07806673472cba75b/swarm.png").content
+    except FileNotFoundError:  # in binaries this will not work but if i just download the image it will
+        swarm_image = requests.get(
+            "https://gist.githubusercontent.com/sw33ze/c0ec6fca37a69ff1a90f6847affd3c5f/raw/818c73cf742e1356018cf3a07806673472cba75b/swarm.png"
+        ).content
 
     # define layouts
     prep_layout = [
         [sg.Text("Main Nation:"), sg.Input(key="-MAIN-")],
         [sg.Text("JP:"), sg.Input(key="-JP-", size=(38, 1))],
+        [sg.Text("Not logged into any nation!", key="-OUT-")],
         [
-            sg.Button("Login", key="-ACTION-", size=(12, 1)),
-            sg.Text("Not logged into any nation!", key="-OUT-"),
+            sg.Button("Login", key="-ACTION-", size=(36, 12)),
         ],
     ]
 
@@ -33,13 +36,15 @@ def gui():
         [sg.Text("Main Nation:"), sg.Input(key="-POLLMAIN-")],
         [
             sg.Text("Poll ID:"),
-            sg.Input(key="-POLL-", size=(7, 1)),
+            sg.Input(key="-POLL-", size=(14, 1)),
             sg.Text("Option:"),
             sg.Input(key="-POLLOPTION-", size=(2, 1)),
         ],
         [
-            sg.Button("Login", key="-POLLACTION-", size=(12, 1)),
             sg.Text("Not logged into any nation!", key="-POLLOUT-"),
+        ],
+        [
+            sg.Button("Login", key="-POLLACTION-", size=(36, 12)),
         ],
     ]
 
@@ -56,7 +61,7 @@ def gui():
         ]
     ]
 
-    return sg.Window("Puppet Manager", layout, icon=swarm_image, size=(325, 120))
+    return sg.Window("Swarm", layout, icon=swarm_image, size=(325, 330))
 
 
 def main():
@@ -65,10 +70,12 @@ def main():
             config = json.load(json_file)
     except FileNotFoundError:
         with open("config.json", "w", encoding="utf-8") as json_file:
-            json_file.write(requests.get("https://gist.githubusercontent.com/sw33ze/568ad00257200f0649d9441a1ff032a0/raw/df3628dec0238bf10e6bd8419a47bd69079882e1/config.json").text)
-        sg.popup_error(
-            "No JSON File! Template created, fill it in with your nations!"
-        )
+            json_file.write(
+                requests.get(
+                    "https://gist.githubusercontent.com/sw33ze/568ad00257200f0649d9441a1ff032a0/raw/df3628dec0238bf10e6bd8419a47bd69079882e1/config.json"
+                ).text
+            )
+        sg.popup_error("No JSON File! Template created, fill it in with your nations!")
         return
     except json.decoder.JSONDecodeError:
         sg.popup_error("JSON file is not valid!", traceback.format_exc())
@@ -79,7 +86,7 @@ def main():
     nation_index = 0
     try:
         while True:
-            event, values = window.read(timeout=100)
+            event, values = window.read(timeout=1)
             if event == sg.WIN_CLOSED:  # da window is closed
                 window.close()
                 break
@@ -108,7 +115,11 @@ def polls_thread(nation_dict, nations, window, nation_index):
             poll_id = values["-POLL-"]
             choice = values["-POLLOPTION-"]
             current_action = window["-POLLACTION-"].get_text()
-            current_nation = nations[nation_index]
+            try:
+                current_nation = nations[nation_index]
+            except IndexError:
+                window["-POLLOUT-"].update("No more nations!")
+                break
             current_password = nation_dict[current_nation]
             if main_nation == "" or poll_id == "" or choice == "":
                 sg.popup("Please enter a nation, poll ID, and poll choice.")
@@ -173,14 +184,18 @@ def prep_thread(nation_dict, nations, window, nation_index):
             main_nation = values["-MAIN-"]
             jp = values["-JP-"]
             current_action = window["-ACTION-"].get_text()
-            current_nation = nations[nation_index]
+            try:
+                current_nation = nations[nation_index]
+            except IndexError:
+                window["-OUT-"].update("No more nations!")
+                return
             current_password = nation_dict[current_nation]
             if main_nation == "" or jp == "":
                 sg.popup("Please enter a nation and jump point.")
             else:
                 window["-ACTION-"].update(disabled=True)
                 headers = {
-                    "User-Agent": f"Puppet Manager devved by nation=sweeze in use by nation={main_nation}",
+                    "User-Agent": f"Swarm (puppet manager) v{VERSION} devved by nation=sweeze in use by nation={main_nation}",
                 }
                 match current_action:  # lets go python 3.10 i love switch statements
                     case "Login":
