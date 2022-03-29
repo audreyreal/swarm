@@ -30,8 +30,9 @@ pls format your code with black beforehand, basically my only requirement ._.
 - [x] add icon
 - [ ] add tab for putting up tags (this is gonna suck so much i hate nationstates)
 - [ ] add tab for changing nation fields and flag
+- [ ] add puppet creator because NS++ is practically abandoned at this point
 - [x] generalize currently used functions
 - [x] create binaries
 - [x] publish instructions on creating binaries in accordance w/ GPL
-- [ ] add puppet creator because NS++ is practically abandoned at this point
-- [ ] functionality to find your wa
+- [x] functionality to find your wa
+- [x] login script

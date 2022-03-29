@@ -1,9 +1,19 @@
+# This file is part of Swarm.
+#
+# Swarm is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+#
+# Swarm is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with Swarm. If not, see <https://www.gnu.org/licenses/>.
+
 import json, traceback, base64
 import PySimpleGUI as sg
 import requests
-import prep, polls
+from components import *
 
-VERSION = "1.0.1"  # VERY IMPORTANT TO CHANGE EVERY UPDATE!
+VERSION = "1.1.0"  # VERY IMPORTANT TO CHANGE EVERY UPDATE!
 
 
 def gui():
@@ -15,9 +25,9 @@ def gui():
     )
     # define icon
     try:
-        with open("swarm.png", "rb") as f:
+        with open("components/swarm.png", "rb") as f:
             swarm_image = base64.b64encode(f.read())
-    except FileNotFoundError:  # in binaries this will not work but if i just download the image it will
+    except FileNotFoundError:  # in binaries this will not work but if i just download the image datauri it will
         swarm_image = requests.get(
             "https://gist.githubusercontent.com/sw33ze/c0ec6fca37a69ff1a90f6847affd3c5f/raw/818c73cf742e1356018cf3a07806673472cba75b/swarm.png"
         ).content
@@ -30,6 +40,10 @@ def gui():
         [
             sg.Button("Login", key="-ACTION-", size=(36, 12)),
         ],
+    ]
+
+    tagging_layout = [
+        [sg.Text("Main Nation:"), sg.Input(key="-TAGGINGMAIN-")],
     ]
 
     poll_layout = [
@@ -48,12 +62,23 @@ def gui():
         ],
     ]
 
+    misc_layout = [
+        [sg.Text("Main Nation:"), sg.Input(key="-MISCMAIN-")],
+        [sg.Text("Not logged into any nation!", key="-MISCOUT-")],
+        [
+            sg.Button("Login to Nations", size=(35, 6)),
+        ],
+        [sg.Button("Find my WA", size=(35, 6))],
+    ]
+
     layout = [
         [
             sg.TabGroup(
                 [
                     [sg.Tab("Prep", prep_layout)],
+                    [sg.Tab("Tagging", tagging_layout, disabled=True)],
                     [sg.Tab("Polls", poll_layout)],
+                    [sg.Tab("Misc", misc_layout)],
                 ],
                 enable_events=True,
                 key="-CURRENT TAB-",
@@ -93,14 +118,79 @@ def main():
             match values["-CURRENT TAB-"]:
                 case "Prep":
                     prep_thread(nation_dict, nations, window, nation_index)
+                case "Tagging":
+                    tagging_thread(nation_dict, window)
                 case "Polls":
                     polls_thread(nation_dict, nations, window, nation_index)
+                case "Misc":
+                    misc_thread(nation_dict, window)
     except Exception as e:
         tb = traceback.format_exc()
         sg.Print(e, tb)
         sg.popup_error(
             "something went wrong copy the box behind this and send it to sweeze pls"
         )
+
+
+def misc_thread(nation_dict, window):
+    def disable_misc_buttons(window):
+        window["Login to Nations"].update(disabled=True)
+        window["Find my WA"].update(disabled=True)
+
+    def enable_misc_buttons(window):
+        window["Login to Nations"].update(disabled=False)
+        window["Find my WA"].update(disabled=False)
+
+    while True:
+        event, values = window.read()
+        try:
+            main_nation = values["-MISCMAIN-"]
+        except TypeError:
+            break
+        if event == "-CURRENT TAB-":
+            if values["-CURRENT TAB-"] != "Misc":
+                return
+        if main_nation == "":
+            sg.popup("Please enter a main nation.")
+        else:
+            headers = {
+                "User-Agent": f"Swarm (puppet manager) v{VERSION} devved by nation=sweeze in use by nation={main_nation}",
+            }
+            match event:
+                case sg.WIN_CLOSED:
+                    window.close()
+                    return
+
+                case "Login to Nations":
+                    disable_misc_buttons(window)
+                    window.perform_long_operation(
+                        lambda: misc.login_loop(nation_dict, headers, window),
+                        "-DONE LOGGING IN-",
+                    )
+                case "Find my WA":
+                    disable_misc_buttons(window)
+                    window.perform_long_operation(
+                        lambda: misc.find_wa(nation_dict.keys(), headers),
+                        "-DONE FINDING WA-",
+                    )
+                # respond to threads
+                case "-DONE LOGGING IN-":
+                    enable_misc_buttons(window)
+                    window["-MISCOUT-"].update("All nations logged in!")
+                case "-DONE FINDING WA-":
+                    enable_misc_buttons(window)
+                    if values["-DONE FINDING WA-"] is None:
+                        window["-MISCOUT-"].update("No WA found!")
+                    else:
+                        window["-MISCOUT-"].update(
+                            f"Found WA! {values['-DONE FINDING WA-']}"
+                        )
+
+
+def tagging_thread(nation_dict, window):
+    sg.Print("Not devved yet!")
+    while True:
+        event, values = window.read()
 
 
 def polls_thread(nation_dict, nations, window, nation_index):
