@@ -11,9 +11,13 @@
 import json, traceback, base64
 import PySimpleGUI as sg
 import requests
-from components import *
+from components import (
+    misc,
+    polls,
+    prep,
+)
 
-VERSION = "1.1.0"  # VERY IMPORTANT TO CHANGE EVERY UPDATE!
+VERSION = "1.1.1"  # VERY IMPORTANT TO CHANGE EVERY UPDATE!
 
 
 def gui():
