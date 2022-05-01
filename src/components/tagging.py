@@ -32,7 +32,7 @@ def login(nation: str, password: str, headers: dict) -> dict:
         "password": password,
     }
 
-    response = requests.post(url, data=data, headers=headers)
+    response = requests.post(url, timeout=20, data=data, headers=headers)
     # get all the information we need
     try:
         chk = response.text.split('<input type="hidden" name="chk" value="')[1].split(
@@ -186,7 +186,9 @@ def change_wfe(wfe: str, chk: str, pin: str, headers: dict) -> str:
         "setwfebutton": "1",
     }
 
-    response = requests.post(url, data=data, headers=headers, cookies=cookies)
+    response = requests.post(
+        url, timeout=20, data=data, headers=headers, cookies=cookies
+    )
 
     if "updated!" in response.text:
         return "WFE changed."
@@ -258,7 +260,9 @@ def upload_banner(
         return "Failed to upload banner."
 
 
-def change_flag_and_banner(flag: str, banner: str, chk: str, pin: str, headers: dict) -> str:
+def change_flag_and_banner(
+    flag: str, banner: str, chk: str, pin: str, headers: dict
+) -> str:
     """Changes the Flag and Banner of a region.
 
     Args:
@@ -280,7 +284,9 @@ def change_flag_and_banner(flag: str, banner: str, chk: str, pin: str, headers: 
         "saveflagandbannerchanges": "1",
     }
 
-    response = requests.post(url, data=data, headers=headers, cookies=cookies)
+    response = requests.post(
+        url, timeout=20, data=data, headers=headers, cookies=cookies
+    )
 
     if "updated!" in response.text:
         return "Flag/banner changed."
@@ -309,7 +315,9 @@ def withdraw_embassy(region: str, chk: str, pin: str, headers: dict) -> str:
         "cancelembassy": " Withdraw Embassy ",
     }
 
-    response = requests.post(url, data=data, headers=headers, cookies=cookies)
+    response = requests.post(
+        url, timeout=20, data=data, headers=headers, cookies=cookies
+    )
 
     if "has been scheduled for demolition." in response.text:
         return "Embassy closed."
@@ -339,7 +347,9 @@ def request_embassy(region: str, chk: str, pin: str, headers: dict) -> str:
         "embassyrequest": "1",
     }
 
-    response = requests.post(url, data=data, headers=headers, cookies=cookies)
+    response = requests.post(
+        url, timeout=20, data=data, headers=headers, cookies=cookies
+    )
 
     if "has been scheduled for demolition." in response.text:
         return "Embassy closed."

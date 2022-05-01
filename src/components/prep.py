@@ -33,7 +33,6 @@ def login(nation, password, headers):
         pin = response.headers["Set-Cookie"].split("; ")[0].split("=")[1]
     except Exception:
         return "Login failed!"
-
     return (pin, chk)
 
 

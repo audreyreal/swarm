@@ -157,3 +157,5 @@ config.json
 config.toml
 # Crash report
 crash_report*.txt
+# VS Code
+.vscode/

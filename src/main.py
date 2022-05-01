@@ -7,7 +7,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License along with Swarm. If not, see <https://www.gnu.org/licenses/>.
-import json, traceback, os  # json for legacy configs, traceback for printing errors to the gui instead of to the console that doesn't exist, os for removing the json config to replace with toml
+import json, traceback, os, datetime  # json for legacy configs, traceback for printing errors to the gui instead of to the console that doesn't exist, os for removing the json config to replace with toml, datetime for the timestamp
 import PySimpleGUI as sg  # library im using for gui stuff
 import toml  # new config format, more readable than json
 from tendo import (
@@ -27,6 +27,7 @@ VERSION = "1.2.0"  # VERY IMPORTANT TO CHANGE EVERY UPDATE!
 
 
 def gui():
+    INF = 10000  # tkinter doesn't support inf, so i decided to just do an absurdly large number
     sg.theme("Material1")
     sg.set_options(
         suppress_raise_key_errors=False,
@@ -39,46 +40,48 @@ def gui():
 
     # define layouts
     PREP_LAYOUT = [
-        [sg.Text("Main Nation:"), sg.Input(key="-MAIN-")],
-        [sg.Text("JP:"), sg.Input(key="-JP-", size=(48, 1))],
+        [sg.Text("Main Nation:"), sg.Input(key="-MAIN-", size=(INF, 1))],
+        [sg.Text("JP:"), sg.Input(key="-JP-", size=(INF, 1))],
         [sg.Text("Not logged into any nation!", key="-OUT-")],
         [
-            sg.Button("Login", key="-ACTION-", size=(48, 12)),
+            sg.Button("Login", key="-ACTION-", size=(INF, INF)),
         ],
     ]
 
     TAGGING_LAYOUT = [
-        [sg.Text("Main Nation:"), sg.Input(key="-TAGGINGMAIN-")],
-        [sg.Button("Region Control Settings", size=(48, 1))],
+        [sg.Text("Main Nation:"), sg.Input(key="-TAGGINGMAIN-", size=(INF, 1))],
+        [sg.Button("Region Control Settings", size=(INF, 1))],
         [sg.Text("Not logged into any nation!", key="-TAGGINGOUT-")],
         [
-            sg.Button("Login", key="-TAGGINGACTION-", size=(48, 12)),
+            sg.Button("Login", key="-TAGGINGACTION-", size=(INF, INF)),
         ],
     ]
 
     POLL_LAYOUT = [
-        [sg.Text("Main Nation:"), sg.Input(key="-POLLMAIN-")],
+        [sg.Text("Main Nation:"), sg.Input(key="-POLLMAIN-", size=(INF, 1))],
         [
             sg.Text("Poll ID:"),
-            sg.Input(key="-POLL-", size=(28, 1)),
+            sg.Input(key="-POLL-", size=(INF, 1)),
+        ],
+        [
             sg.Text("Option:"),
-            sg.Input(key="-POLLOPTION-", size=(4, 1)),
+            sg.Input(key="-POLLOPTION-", size=(INF, 1)),
         ],
         [
             sg.Text("Not logged into any nation!", key="-POLLOUT-"),
         ],
         [
-            sg.Button("Login", key="-POLLACTION-", size=(48, 12)),
+            sg.Button("Login", key="-POLLACTION-", size=(INF, INF)),
         ],
     ]
 
     MISC_LAYOUT = [
-        [sg.Text("Main Nation:"), sg.Input(key="-MISCMAIN-")],
+        [sg.Text("Main Nation:"), sg.Input(key="-MISCMAIN-", size=(INF, 1))],
         [sg.Text("Not logged into any nation!", key="-MISCOUT-")],
         [
-            sg.Button("Login to Nations", size=(48, 6)),
+            sg.Button("Login to Nations", size=(INF, 6)),
         ],
-        [sg.Button("Find my WA", size=(48, 6))],
+        [sg.Button("Find my WA", size=(INF, 6))],
     ]
 
     LAYOUT = [
@@ -97,7 +100,14 @@ def gui():
         ]
     ]
 
-    return sg.Window(f"Swarm v{VERSION}", LAYOUT, icon=ICON, size=(400, 330))
+    return sg.Window(
+        f"Swarm v{VERSION}",
+        LAYOUT,
+        icon=ICON,
+        size=(400, 330),
+        resizable=True,
+        finalize=True,
+    )
 
 
 def json_file_to_toml_file(json_file):
@@ -144,6 +154,7 @@ def main():
         return  # end nation config parsing
     nation_dict = config["nations"]
     window = gui()
+    window.set_min_size((400, 330))
     while True:
         event, values = window.read(timeout=1)
         if event == sg.WIN_CLOSED:  # da window is closed
@@ -206,6 +217,7 @@ def tagging_thread(nation_dict, window):
         "Embassies Not Done": True,
         "Tags Not Done": True,
     }
+    window["-TAGGINGACTION-"].Widget.config(takefocus=0)
     while True:
         event, values = window.read()
         try:
@@ -218,8 +230,11 @@ def tagging_thread(nation_dict, window):
             sg.popup("Please enter a main nation.")
             continue
         headers = {
-            "User-Agent": f"Swarm (puppet manager, repo @ https://github.com/sw33ze/swarm) v{VERSION} developed by nation=sweeze (Discord: sweeze#3463) in use by nation={main_nation}",
+            "User-Agent": f"Swarm (puppet manager, repo @ https://github.com/sw33ze/swarm) v{VERSION} developed by nation=sweeze (Discord: sweeze#3463) in use by nation={main_nation}, user input timestamp={datetime.datetime.now()}",
         }
+        # there's a whole lot of stuff im shoving into that ua i know, but it's better to have too much info than not enough
+        # the datetime.datetime.now() in particular is based on this post: https://forum.nationstates.net/viewtopic.php?p=30083979&sid=fbcf1d72aa0e04e249bd622221911f2c#p30083979
+        # which recommends giving the timestamp of the user input so things are clear to admin if simultaneity is being followed properly or not
         match event:
             case sg.WIN_CLOSED:
                 return
@@ -230,7 +245,9 @@ def tagging_thread(nation_dict, window):
                 if "tag_fields" not in locals():
                     sg.popup("Please fill in the tagging settings first.")
                     continue
-                window["-TAGGINGACTION-"].update(disabled=True) # disable the action button in accordance with the simultaneity rule
+                window["-TAGGINGACTION-"].update(
+                    disabled=True
+                )  # disable the action button in accordance with the simultaneity rule
                 match window["-TAGGINGACTION-"].get_text():
                     case "Login":
                         nation = nations[nation_index]
@@ -267,7 +284,8 @@ def tagging_thread(nation_dict, window):
                                 storage["chk"],
                                 storage["pin"],
                                 headers,
-                            )
+                            ),
+                            "-FLAG UPLOADED-",
                         )
                     case "Upload Banner":
                         window["-TAGGINGOUT-"].update(
@@ -289,9 +307,10 @@ def tagging_thread(nation_dict, window):
                         )
                         window.perform_long_operation(
                             lambda: tagging.change_flag_and_banner(
-                                flag if "flag" in locals() else "none"
-
-                            )
+                                flag if "flag" in locals() else "none",
+                                banner if "banner" in locals() else "0",
+                            ),
+                            "-FLAG/BANNER CHANGED-",
                         )
 
             # beyond here im just gonna be responding to threads and re-enabling the action button in accordance w/ following simultaneity
@@ -319,6 +338,8 @@ def misc_thread(nation_dict, window):
         window["Login to Nations"].update(disabled=False)
         window["Find my WA"].update(disabled=False)
 
+    window["Login to Nations"].Widget.config(takefocus=0)
+    window["Find my WA"].Widget.config(takefocus=0)
     while True:
         event, values = window.read()
         try:
@@ -332,7 +353,7 @@ def misc_thread(nation_dict, window):
             sg.popup("Please enter a main nation.")
         else:
             headers = {
-                "User-Agent": f"Swarm (puppet manager, repo @ https://github.com/sw33ze/swarm) v{VERSION} developed by nation=sweeze (Discord: sweeze#3463) in use by nation={main_nation}",
+                "User-Agent": f"Swarm (puppet manager, repo @ https://github.com/sw33ze/swarm) v{VERSION} developed by nation=sweeze (Discord: sweeze#3463) in use by nation={main_nation}, user input timestamp={datetime.datetime.now()}",
             }
             match event:
                 case sg.WIN_CLOSED:
@@ -368,6 +389,7 @@ def misc_thread(nation_dict, window):
 def polls_thread(nation_dict, window):
     nation_index = 0
     nations = tuple(nation_dict.keys())
+    window["-POLLACTION-"].Widget.config(takefocus=0)
     while True:
         event, values = window.read()
         if event == sg.WIN_CLOSED:  # da window is closed
@@ -392,7 +414,7 @@ def polls_thread(nation_dict, window):
             else:
                 window["-POLLACTION-"].update(disabled=True)
                 headers = {
-                    "User-Agent": f"Swarm (puppet manager, repo @ https://github.com/sw33ze/swarm) v{VERSION} developed by nation=sweeze (Discord: sweeze#3463) in use by nation={main_nation}",
+                    "User-Agent": f"Swarm (puppet manager, repo @ https://github.com/sw33ze/swarm) v{VERSION} developed by nation=sweeze (Discord: sweeze#3463) in use by nation={main_nation}, user input timestamp={datetime.datetime.now()}, userclick timestamp=",
                 }
                 match current_action:  # lets go python 3.10 i love switch statements
                     case "Login":
@@ -439,6 +461,7 @@ def polls_thread(nation_dict, window):
 def prep_thread(nation_dict, window):
     nation_index = 0
     nations = tuple(nation_dict.keys())
+    window["-ACTION-"].Widget.config(takefocus=0)
     while True:
         event, values = window.read()
         if event == sg.WIN_CLOSED:  # da window is closed
@@ -462,7 +485,7 @@ def prep_thread(nation_dict, window):
             else:
                 window["-ACTION-"].update(disabled=True)
                 headers = {
-                    "User-Agent": f"Swarm (puppet manager, repo @ https://github.com/sw33ze/swarm) v{VERSION} developed by nation=sweeze (Discord: sweeze#3463) in use by nation={main_nation}",
+                    "User-Agent": f"Swarm (puppet manager, repo @ https://github.com/sw33ze/swarm) v{VERSION} developed by nation=sweeze (Discord: sweeze#3463) in use by nation={main_nation}, user input timestamp={datetime.datetime.now()}",
                 }
                 match current_action:  # lets go python 3.10 i love switch statements
                     case "Login":
