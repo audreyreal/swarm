@@ -31,7 +31,7 @@ def login(nation, password, headers):
         soup = BeautifulSoup(response.text, "html.parser")
         chk = soup.find("input", {"name": "chk"}).attrs["value"]
         pin = response.headers["Set-Cookie"].split("; ")[0].split("=")[1]
-    except:
+    except Exception:
         return "Login failed!"
 
     return (pin, chk)
@@ -42,7 +42,7 @@ def apply_wa(pin, chk, headers):
         "pin": pin,
     }
 
-    data = {"action": "join_UN", "chk": chk, "submit": "1"}
+    data = {"action": "join_UN", "chk": chk, "submit": "1", "resend": "1"}
 
     requests.post(
         "https://www.nationstates.net/template-overall=none/page=UN_status",

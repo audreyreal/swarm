@@ -28,7 +28,7 @@ def login(nation, password, headers, poll_id):
         soup = BeautifulSoup(response.text, "html.parser")
         chk = soup.find("input", {"name": "chk"}).attrs["value"]
         pin = response.headers["Set-Cookie"].split("; ")[0].split("=")[1]
-    except:
+    except Exception:
         return "Login failed!"
 
     return (pin, chk)

@@ -28,7 +28,7 @@ def login(nation: str, password: str, headers: dict) -> str:
     url = f"https://www.nationstates.net/cgi-bin/api.cgi?nation={nation}&q=ping"
     try:
         requests.get(url, headers=headers).raise_for_status()
-    except:
+    except Exception:
         return f"Failed to login to {nation}."
     return f"Successfully logged in to {nation}."
 
@@ -65,6 +65,7 @@ def find_wa(nations: list, headers: dict) -> str or None:
     wa_list = requests.get(url, headers=headers).text
     for nation in nations:
         nation = nation.replace(" ", "_").lower()
-        if f",{nation}," in wa_list:
-            # reason i have to do trailing commas is because im not properly parsing the xml out of laziness, and i dont want accidental false positives
+        if (
+            f",{nation}," in wa_list
+        ):  # reason i have to do trailing commas is because im not properly parsing the xml out of laziness, and i dont want accidental false positives
             return nation
