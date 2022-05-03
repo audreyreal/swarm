@@ -7,7 +7,10 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License along with Swarm. If not, see <https://www.gnu.org/licenses/>.
-import json, traceback, os, datetime  # json for legacy configs, traceback for printing errors to the gui instead of to the console that doesn't exist, os for removing the json config to replace with toml, datetime for the timestamp
+import json  # for parsing legacy configs
+import traceback  # for writing out the crash report
+import os  # for converting legacy configs
+import datetime  # for the user input timestamp i shove into the UA
 import PySimpleGUI as sg  # library im using for gui stuff
 import toml  # new config format, more readable than json
 from tendo import (
@@ -414,7 +417,7 @@ def polls_thread(nation_dict, window):
             else:
                 window["-POLLACTION-"].update(disabled=True)
                 headers = {
-                    "User-Agent": f"Swarm (puppet manager, repo @ https://github.com/sw33ze/swarm) v{VERSION} developed by nation=sweeze (Discord: sweeze#3463) in use by nation={main_nation}, user input timestamp={datetime.datetime.now()}, userclick timestamp=",
+                    "User-Agent": f"Swarm (puppet manager, repo @ https://github.com/sw33ze/swarm) v{VERSION} developed by nation=sweeze (Discord: sweeze#3463) in use by nation={main_nation}, user input timestamp={datetime.datetime.now()}",
                 }
                 match current_action:  # lets go python 3.10 i love switch statements
                     case "Login":
@@ -553,10 +556,10 @@ if __name__ == "__main__":
 
     except Exception:
         sg.popup_error(
-            "Something went wrong! Send the crash_report.txt file to sweeze!!"
+            f"Something went wrong! Send the crash-report-{datetime.date.today()}.txt file to sweeze!!"
         )
 
-        with open("crash_report.txt", "w") as f:
+        with open(f"crash-report-{datetime.date.today()}.txt", "w") as f:
             f.write(
                 f"v{VERSION}\n\n{traceback.format_exc()}"
             )  # this looks scary its not i promise, this will print the version at line 1, a blank line, and the full traceback for the error so i can see what went wrong
