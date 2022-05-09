@@ -25,12 +25,13 @@ from components import (
 )  # explicit is better than implicit, wildcard imports are apparantly "dangerous" or smth so no more of that ig, pyinstaller also doesn't work with them lmao
 from components.swarm_icon import ICON
 
-
 VERSION = "1.2.0"  # VERY IMPORTANT TO CHANGE EVERY UPDATE!
 
 
-def gui():
-    INF = 10000  # tkinter doesn't support inf, so i decided to just do an absurdly large number
+def init():
+    me = singleton.SingleInstance()
+    # will sys.exit(-1) if other instance is running, to avoid any possibility of breaking simultaneity
+
     sg.theme("Material1")
     sg.set_options(
         suppress_raise_key_errors=False,
@@ -38,8 +39,76 @@ def gui():
         suppress_key_guessing=False,
     )
 
-    if "clam" in sg.TTK_THEME_LIST:
-        sg.set_options(ttk_theme="clam")
+    sg.set_options(ttk_theme="clam")
+
+    print(get_configs())
+
+
+def block_button_focuses(window):
+    buttons = [
+        "-ACTION-",
+        "-TAGGINGACTION-",
+        "-POLLACTION-",
+        "Login to Nations",
+        "Find my WA",
+    ]
+    for button in buttons:
+        window[button].block_focus(block=True)
+
+
+# this function exists so that the end user can't go break simultaneity and one click per action by using tab to select a button and mash it with space
+
+
+def process_config(file_name):
+    try:  # parse the nation config, try to account for as many fuckups as possible
+        if os.path.exists(f"{file_name}.json"):
+            json_file_to_toml_file(f"{file_name}.json")
+        with open(f"{file_name}.toml", "r", encoding="utf-8") as toml_file:
+            config = toml.load(toml_file)
+        return config  # this is what we want ideally
+    except FileNotFoundError:
+        create_template_toml(f"{file_name}.toml")
+        sg.popup_error(
+            "No TOML file found! Template created, fill it in with your nations!"
+        )
+        return
+    except toml.decoder.TomlDecodeError as exception:
+        sg.popup_error("TOML file is not valid!", exception)
+        return  # end nation config parsing
+
+
+def get_configs():
+    all_files = os.listdir()
+    toml_files = [file for file in all_files if ".toml" in file]
+    configs = [
+        file.replace(".toml", "") for file in toml_files if "nations" in toml.load(file)
+    ]
+    return configs
+
+
+def get_main_and_config():
+    LAYOUT = [
+        [sg.Text("Config:"), sg.Combo(get_configs(), key="config", expand_x=True)],
+        [sg.Text("Main Nation:"), sg.Input(key="main", expand_x=True)],
+        [sg.Submit()],
+    ]
+
+    window = sg.Window(
+        f"Swarm v{VERSION}",
+        LAYOUT,
+        icon=ICON,
+        size=(400, 100),
+        resizable=True,
+        finalize=True,
+    )
+    window.set_min_size((400, 100))
+    event, values = window.read()
+    window.close()
+    return values
+
+
+def gui():
+    INF = 10000  # tkinter doesn't support inf, so i decided to just do an absurdly large number
 
     # define layouts
     PREP_LAYOUT = [
@@ -118,6 +187,7 @@ def json_file_to_toml_file(json_file):
         data = json.load(f)
     with open(json_file.replace(".json", ".toml"), "w") as f:
         toml.dump(data, f)
+    os.remove(json_file)
 
 
 def disable_all_tabs(current_tab, window):
@@ -137,26 +207,12 @@ def enable_all_tabs(current_tab, window):
 
 
 def main():
-    me = (
-        singleton.SingleInstance()
-    )  # will sys.exit(-1) if other instance is running, to avoid any possibility of breaking simultaneity
-    try:  # parse the nation config, try to account for as many fuckups as possible
-        if os.path.exists("config.json"):
-            json_file_to_toml_file("config.json")
-            os.remove("config.json")
-        with open("config.toml", "r", encoding="utf-8") as toml_file:
-            config = toml.load(toml_file)
-    except FileNotFoundError:
-        create_template_toml("config.toml")
-        sg.popup_error(
-            "No TOML file found! Template created, fill it in with your nations!"
-        )
+    config = process_config("config")
+    if config is None:
         return
-    except toml.decoder.TomlDecodeError as exception:
-        sg.popup_error("TOML file is not valid!", exception)
-        return  # end nation config parsing
     nation_dict = config["nations"]
     window = gui()
+    block_button_focuses(window)
     window.set_min_size((400, 330))
     while True:
         event, values = window.read(timeout=1)
@@ -220,7 +276,6 @@ def tagging_thread(nation_dict, window):
         "Embassies Not Done": True,
         "Tags Not Done": True,
     }
-    window["-TAGGINGACTION-"].Widget.config(takefocus=0)
     while True:
         event, values = window.read()
         try:
@@ -341,8 +396,6 @@ def misc_thread(nation_dict, window):
         window["Login to Nations"].update(disabled=False)
         window["Find my WA"].update(disabled=False)
 
-    window["Login to Nations"].Widget.config(takefocus=0)
-    window["Find my WA"].Widget.config(takefocus=0)
     while True:
         event, values = window.read()
         try:
@@ -392,7 +445,6 @@ def misc_thread(nation_dict, window):
 def polls_thread(nation_dict, window):
     nation_index = 0
     nations = tuple(nation_dict.keys())
-    window["-POLLACTION-"].Widget.config(takefocus=0)
     while True:
         event, values = window.read()
         if event == sg.WIN_CLOSED:  # da window is closed
@@ -464,7 +516,6 @@ def polls_thread(nation_dict, window):
 def prep_thread(nation_dict, window):
     nation_index = 0
     nations = tuple(nation_dict.keys())
-    window["-ACTION-"].Widget.config(takefocus=0)
     while True:
         event, values = window.read()
         if event == sg.WIN_CLOSED:  # da window is closed
@@ -552,6 +603,8 @@ def prep_thread(nation_dict, window):
 
 if __name__ == "__main__":
     try:
+        init()
+        get_main_and_config()
         main()
 
     except Exception:
