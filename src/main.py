@@ -23,6 +23,7 @@ from components import (
     polls,
     prep,
     tagging,
+    crash_reporter as cr,
 )  # explicit is better than implicit, wildcard imports are apparantly "dangerous" or smth so no more of that ig, pyinstaller also doesn't work with them lmao
 from components.swarm_icon import ICON
 
@@ -45,7 +46,7 @@ def init():
 
 
 def block_button_focuses(window):
-    # this function exists so that the end user can't go break simultaneity 
+    # this function exists so that the end user can't go break simultaneity
     # and one click per action by using tab to select a button and simulate mashing it with space
     buttons = [
         "-ACTION-",
@@ -80,13 +81,9 @@ def get_configs(file_type=".toml"):
     all_files = os.listdir()
     toml_files = [file for file in all_files if file_type in file]
     try:
-        configs = [
-            file for file in toml_files if "nations" in toml.load(file)
-        ]
+        configs = [file for file in toml_files if "nations" in toml.load(file)]
     except Exception:
-        configs = [
-            file for file in toml_files if "nations" in json.load(file)
-        ]
+        configs = [file for file in toml_files if "nations" in json.load(file)]
     return configs
 
 
@@ -105,11 +102,15 @@ def get_main_and_config():
                 "No TOML file found! Template created, fill it in with your nations!"
             )
             exit()
-        
-        
+
     LAYOUT = [
         [sg.Text("Main Nation:"), sg.Input(key="main", expand_x=True)],
-        [sg.Text("Config:"), sg.Combo(get_configs(), key="config", expand_x=True, default_value="config.toml")],
+        [
+            sg.Text("Config:"),
+            sg.Combo(
+                get_configs(), key="config", expand_x=True, default_value="config.toml"
+            ),
+        ],
         [sg.Submit()],
     ]
 
@@ -122,7 +123,7 @@ def get_main_and_config():
         finalize=True,
     )
     window.set_min_size((400, 100))
-    
+
     while True:
         event, values = window.read()
         match event:
@@ -132,13 +133,19 @@ def get_main_and_config():
                 if "" in (values["main"], values["config"]):
                     sg.popup("Please fill in your main nation and config file!")
                 else:
-                    headers = {"User-Agent": f"Swarm (puppet manager, repo @ https://github.com/sw33ze/swarm) v{VERSION} developed by nation=sweeze (Discord: sweeze#3463) in use by nation={values['main'].strip()}, user input timestamp={datetime.datetime.now()}"}
-                    nation_exists = misc.check_if_nation_exists(values["main"].strip(), headers=headers)
+                    headers = {
+                        "User-Agent": f"Swarm (puppet manager, repo @ https://github.com/sw33ze/swarm) v{VERSION} developed by nation=sweeze (Discord: sweeze#3463) in use by nation={values['main'].strip()}, user input timestamp={datetime.datetime.now()}"
+                    }
+                    nation_exists = misc.check_if_nation_exists(
+                        values["main"].strip(), headers=headers
+                    )
                     if nation_exists:
                         window.close()
                         return values
                     else:
-                        sg.popup("Nation does not exist!\nMake sure you spelled it correctly!")
+                        sg.popup(
+                            "Nation does not exist!\nMake sure you spelled it correctly!"
+                        )
 
 
 def gui():
@@ -626,17 +633,42 @@ def prep_thread(nation_dict, window, main_nation):
             window["-ACTION-"].update(disabled=False)
 
 
+def report_crash(traceback):
+    try:  # make sure a webhook to report the crash to is present otherwise dont bother
+        with open("webhook.txt", "r") as f:
+            webhook = f.read()
+    except Exception:
+        create_crash_report(anonymized_traceback)
+    anonymized_traceback = cr.anonymize_traceback(traceback, "SwarmUser")
+    LAYOUT = [
+        [
+            sg.Text(
+                "Swarm has crashed! Do you want to automatically send the following crash report to the developer?"
+            )
+        ],
+        [sg.Multiline(anonymized_traceback, size=(80, 10), disabled=True)],
+        [sg.Button("Send"), sg.Button("Cancel")],
+    ]
+
+    window = sg.Window("Something went wrong!", layout=LAYOUT)
+    event, values = window.read()
+    match event:
+        case "Send":
+            cr.upload(webhook, f"Swarm v{VERSION}", anonymized_traceback)
+            return
+        case "Cancel":
+            create_crash_report(anonymized_traceback)
+            return
+
+
+def create_crash_report(anonymized_traceback):
+    with open(f"crash-report-{datetime.date.today()}.txt", "w") as f:
+        f.write(f"v{VERSION}\n\n{anonymized_traceback}")
+
+
 if __name__ == "__main__":
     try:
         init()
         main()
-
     except Exception:
-        sg.popup_error(
-            f"Something went wrong! Send the crash-report-{datetime.date.today()}.txt file to sweeze!!"
-        )
-
-        with open(f"crash-report-{datetime.date.today()}.txt", "w") as f:
-            f.write(
-                f"v{VERSION}\n\n{traceback.format_exc()}"
-            )  # this looks scary its not i promise, this will print the version at line 1, a blank line, and the full traceback for the error so i can see what went wrong
+        report_crash(traceback.format_exc())

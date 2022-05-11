@@ -26,6 +26,7 @@ def check_if_nation_exists(nation: str, headers: dict) -> bool:
     response = requests.get(url, headers=headers)
     return response.status_code == 200
 
+
 def login(nation: str, password: str, headers: dict) -> str:
     """Logs into a nation via the API
 
