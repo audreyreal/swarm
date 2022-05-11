@@ -12,6 +12,20 @@ import time
 import requests
 
 
+def check_if_nation_exists(nation: str, headers: dict) -> bool:
+    """Checks if a nation exists.
+
+    Args:
+        nation (str): Nation you want to check.
+        headers (dict): Headers, mostly for a user agent but you could shove other stuff there too ig
+
+    Returns:
+        bool: True if the nation exists, False if it doesn't.
+    """
+    url = f"https://www.nationstates.net/cgi-bin/api.cgi?nation={nation}"
+    response = requests.get(url, headers=headers)
+    return response.status_code == 200
+
 def login(nation: str, password: str, headers: dict) -> str:
     """Logs into a nation via the API
 

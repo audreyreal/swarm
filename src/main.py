@@ -11,6 +11,7 @@ import json  # for parsing legacy configs
 import traceback  # for writing out the crash report
 import os  # for converting legacy configs
 import datetime  # for the user input timestamp i shove into the UA
+
 import PySimpleGUI as sg  # library im using for gui stuff
 import toml  # new config format, more readable than json
 from tendo import (
@@ -38,13 +39,14 @@ def init():
         suppress_error_popups=False,
         suppress_key_guessing=False,
     )
+    # the fact errors are suppressed by default is non pythonic and cringe as fuck
 
     sg.set_options(ttk_theme="clam")
 
-    print(get_configs())
-
 
 def block_button_focuses(window):
+    # this function exists so that the end user can't go break simultaneity 
+    # and one click per action by using tab to select a button and simulate mashing it with space
     buttons = [
         "-ACTION-",
         "-TAGGINGACTION-",
@@ -54,9 +56,6 @@ def block_button_focuses(window):
     ]
     for button in buttons:
         window[button].block_focus(block=True)
-
-
-# this function exists so that the end user can't go break simultaneity and one click per action by using tab to select a button and mash it with space
 
 
 def process_config(file_name):
@@ -71,25 +70,46 @@ def process_config(file_name):
         sg.popup_error(
             "No TOML file found! Template created, fill it in with your nations!"
         )
-        return
+        exit()
     except toml.decoder.TomlDecodeError as exception:
         sg.popup_error("TOML file is not valid!", exception)
-        return  # end nation config parsing
+        exit()  # end nation config parsing
 
 
-def get_configs():
+def get_configs(file_type=".toml"):
     all_files = os.listdir()
-    toml_files = [file for file in all_files if ".toml" in file]
-    configs = [
-        file.replace(".toml", "") for file in toml_files if "nations" in toml.load(file)
-    ]
+    toml_files = [file for file in all_files if file_type in file]
+    try:
+        configs = [
+            file for file in toml_files if "nations" in toml.load(file)
+        ]
+    except Exception:
+        configs = [
+            file for file in toml_files if "nations" in json.load(file)
+        ]
     return configs
 
 
 def get_main_and_config():
+    toml_configs = get_configs()
+    json_configs = get_configs(file_type=".json")
+    if toml_configs == []:
+        if json_configs != []:
+            # if there are no toml configs, but there are legacy json configs, convert them
+            for file in json_configs:
+                json_file_to_toml_file(file)
+        else:
+            # if there are no configs, create a template and exit after the fact
+            create_template_toml("config.toml")
+            sg.popup_error(
+                "No TOML file found! Template created, fill it in with your nations!"
+            )
+            exit()
+        
+        
     LAYOUT = [
-        [sg.Text("Config:"), sg.Combo(get_configs(), key="config", expand_x=True)],
         [sg.Text("Main Nation:"), sg.Input(key="main", expand_x=True)],
+        [sg.Text("Config:"), sg.Combo(get_configs(), key="config", expand_x=True, default_value="config.toml")],
         [sg.Submit()],
     ]
 
@@ -102,17 +122,31 @@ def get_main_and_config():
         finalize=True,
     )
     window.set_min_size((400, 100))
-    event, values = window.read()
-    window.close()
-    return values
+    
+    while True:
+        event, values = window.read()
+        match event:
+            case sg.WIN_CLOSED:
+                exit()
+            case "Submit":
+                if "" in (values["main"], values["config"]):
+                    sg.popup("Please fill in your main nation and config file!")
+                else:
+                    headers = {"User-Agent": f"Swarm (puppet manager, repo @ https://github.com/sw33ze/swarm) v{VERSION} developed by nation=sweeze (Discord: sweeze#3463) in use by nation={values['main'].strip()}, user input timestamp={datetime.datetime.now()}"}
+                    nation_exists = misc.check_if_nation_exists(values["main"].strip(), headers=headers)
+                    if nation_exists:
+                        window.close()
+                        return values
+                    else:
+                        sg.popup("Nation does not exist!\nMake sure you spelled it correctly!")
 
 
 def gui():
     INF = 10000  # tkinter doesn't support inf, so i decided to just do an absurdly large number
+    # apparantly i actually could just use expand_x=True so past me is just a dumbass lmao
 
     # define layouts
     PREP_LAYOUT = [
-        [sg.Text("Main Nation:"), sg.Input(key="-MAIN-", size=(INF, 1))],
         [sg.Text("JP:"), sg.Input(key="-JP-", size=(INF, 1))],
         [sg.Text("Not logged into any nation!", key="-OUT-")],
         [
@@ -121,7 +155,6 @@ def gui():
     ]
 
     TAGGING_LAYOUT = [
-        [sg.Text("Main Nation:"), sg.Input(key="-TAGGINGMAIN-", size=(INF, 1))],
         [sg.Button("Region Control Settings", size=(INF, 1))],
         [sg.Text("Not logged into any nation!", key="-TAGGINGOUT-")],
         [
@@ -130,14 +163,11 @@ def gui():
     ]
 
     POLL_LAYOUT = [
-        [sg.Text("Main Nation:"), sg.Input(key="-POLLMAIN-", size=(INF, 1))],
         [
             sg.Text("Poll ID:"),
-            sg.Input(key="-POLL-", size=(INF, 1)),
-        ],
-        [
+            sg.Input(key="-POLL-", size=(30, 1), expand_x=True),
             sg.Text("Option:"),
-            sg.Input(key="-POLLOPTION-", size=(INF, 1)),
+            sg.Input(key="-POLLOPTION-", size=(3, 1)),
         ],
         [
             sg.Text("Not logged into any nation!", key="-POLLOUT-"),
@@ -148,12 +178,11 @@ def gui():
     ]
 
     MISC_LAYOUT = [
-        [sg.Text("Main Nation:"), sg.Input(key="-MISCMAIN-", size=(INF, 1))],
         [sg.Text("Not logged into any nation!", key="-MISCOUT-")],
         [
-            sg.Button("Login to Nations", size=(INF, 6)),
+            sg.Button("Login to Nations", size=(INF, 6), expand_y=True),
         ],
-        [sg.Button("Find my WA", size=(INF, 6))],
+        [sg.Button("Find my WA", size=(INF, 6), expand_y=True)],
     ]
 
     LAYOUT = [
@@ -161,13 +190,12 @@ def gui():
             sg.TabGroup(
                 [
                     [sg.Tab("Prep", PREP_LAYOUT)],
-                    [sg.Tab("Tagging", TAGGING_LAYOUT)],
+                    [sg.Tab("Tagging", TAGGING_LAYOUT, disabled=True)],
                     [sg.Tab("Polls", POLL_LAYOUT)],
                     [sg.Tab("Misc", MISC_LAYOUT)],
                 ],
                 enable_events=True,
                 key="-CURRENT TAB-",
-                border_width=0,
             )
         ]
     ]
@@ -207,7 +235,12 @@ def enable_all_tabs(current_tab, window):
 
 
 def main():
-    config = process_config("config")
+    if os.path.exists("config.json"):
+        json_file_to_toml_file("config.json")
+    # convert json config to toml config since it's more user friendly imo
+    values = get_main_and_config()
+    config = process_config(values["config"].replace(".toml", ""))
+    main_nation = values["main"].strip()
     if config is None:
         return
     nation_dict = config["nations"]
@@ -221,13 +254,13 @@ def main():
             break
         match values["-CURRENT TAB-"]:
             case "Prep":
-                prep_thread(nation_dict, window)
+                prep_thread(nation_dict, window, main_nation)
             case "Tagging":
-                tagging_thread(nation_dict, window)
+                tagging_thread(nation_dict, window, main_nation)
             case "Polls":
-                polls_thread(nation_dict, window)
+                polls_thread(nation_dict, window, main_nation)
             case "Misc":
-                misc_thread(nation_dict, window)
+                misc_thread(nation_dict, window, main_nation)
 
 
 def create_template_toml(file_name):
@@ -267,7 +300,7 @@ def tagging_popup():
                 return values
 
 
-def tagging_thread(nation_dict, window):
+def tagging_thread(nation_dict, window, main_nation):
     nation_index = 0
     nations = tuple(nation_dict.keys())
     statuses = {
@@ -385,7 +418,7 @@ def tagging_thread(nation_dict, window):
                 window["-TAGGINGACTION-"].update(disabled=False)
 
 
-def misc_thread(nation_dict, window):
+def misc_thread(nation_dict, window, main_nation):
     def disable_misc_buttons(window):
         disable_all_tabs("Misc", window)
         window["Login to Nations"].update(disabled=True)
@@ -398,15 +431,9 @@ def misc_thread(nation_dict, window):
 
     while True:
         event, values = window.read()
-        try:
-            main_nation = values["-MISCMAIN-"]
-        except TypeError:
-            break
         if event == "-CURRENT TAB-":
             if values["-CURRENT TAB-"] != "Misc":
                 return
-        if main_nation == "":
-            sg.popup("Please enter a main nation.")
         else:
             headers = {
                 "User-Agent": f"Swarm (puppet manager, repo @ https://github.com/sw33ze/swarm) v{VERSION} developed by nation=sweeze (Discord: sweeze#3463) in use by nation={main_nation}, user input timestamp={datetime.datetime.now()}",
@@ -442,7 +469,7 @@ def misc_thread(nation_dict, window):
                         )
 
 
-def polls_thread(nation_dict, window):
+def polls_thread(nation_dict, window, main_nation):
     nation_index = 0
     nations = tuple(nation_dict.keys())
     while True:
@@ -452,7 +479,6 @@ def polls_thread(nation_dict, window):
             break
 
         if event == "-POLLACTION-":  # did u click the button to do the things
-            main_nation = values["-POLLMAIN-"]
             poll_id = values["-POLL-"]
             choice = values["-POLLOPTION-"]
             current_action = window["-POLLACTION-"].get_text()
@@ -464,8 +490,8 @@ def polls_thread(nation_dict, window):
                 enable_all_tabs("Polls", window)
                 break
             current_password = nation_dict[current_nation]
-            if main_nation == "" or poll_id == "" or choice == "":
-                sg.popup("Please enter a nation, poll ID, and poll choice.")
+            if "" in (poll_id, choice):
+                sg.popup("Please enter poll ID and poll choice.")
             else:
                 window["-POLLACTION-"].update(disabled=True)
                 headers = {
@@ -513,7 +539,7 @@ def polls_thread(nation_dict, window):
             window["-POLLACTION-"].update(disabled=False)
 
 
-def prep_thread(nation_dict, window):
+def prep_thread(nation_dict, window, main_nation):
     nation_index = 0
     nations = tuple(nation_dict.keys())
     while True:
@@ -523,7 +549,6 @@ def prep_thread(nation_dict, window):
             break
 
         if event == "-ACTION-":  # did u click the button to do the things
-            main_nation = values["-MAIN-"].strip()
             jp = values["-JP-"].strip()
             current_action = window["-ACTION-"].get_text()
             try:
@@ -534,8 +559,8 @@ def prep_thread(nation_dict, window):
                 enable_all_tabs("Prep", window)
                 return
             current_password = nation_dict[current_nation]
-            if main_nation == "" or jp == "":
-                sg.popup("Please enter a nation and jump point.")
+            if jp == "":
+                sg.popup("Please enter a jump point.")
             else:
                 window["-ACTION-"].update(disabled=True)
                 headers = {
@@ -604,7 +629,6 @@ def prep_thread(nation_dict, window):
 if __name__ == "__main__":
     try:
         init()
-        get_main_and_config()
         main()
 
     except Exception:

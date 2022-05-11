@@ -159,3 +159,5 @@ config.toml
 crash-report*.txt
 # VS Code
 .vscode/
+# Webhook URL
+webhook.txt
