@@ -68,7 +68,7 @@ def process_config(file_name):
         return config  # this is what we want ideally
     except FileNotFoundError:
         create_template_toml(f"{file_name}.toml")
-        sg.popup_error(
+        sg.popup(
             "No TOML file found! Template created, fill it in with your nations!"
         )
         exit()
@@ -77,38 +77,34 @@ def process_config(file_name):
         exit()  # end nation config parsing
 
 
-def get_configs(file_type=".toml"):
+def get_configs(file_type):
     all_files = os.listdir()
     toml_files = [file for file in all_files if file_type in file]
+    json_files = [file for file in all_files if ".json" in file]
     try:
         configs = [file for file in toml_files if "nations" in toml.load(file)]
     except Exception:
-        configs = [file for file in toml_files if "nations" in json.load(file)]
+        configs = [file for file in json_files if "nations" in json.load(file)]
+        for config in config:
+            json_file_to_toml_file(config)
+    if not configs:
+        sg.popup(
+            "No TOML file found! Template created, fill it in with your nations!"
+        )
+        create_template_toml("config.toml")
+        exit()
     return configs
 
 
 def get_main_and_config():
-    toml_configs = get_configs()
-    json_configs = get_configs(file_type=".json")
-    if toml_configs == []:
-        if json_configs != []:
-            # if there are no toml configs, but there are legacy json configs, convert them
-            for file in json_configs:
-                json_file_to_toml_file(file)
-        else:
-            # if there are no configs, create a template and exit after the fact
-            create_template_toml("config.toml")
-            sg.popup_error(
-                "No TOML file found! Template created, fill it in with your nations!"
-            )
-            exit()
+    configs = get_configs(".toml")
 
     LAYOUT = [
         [sg.Text("Main Nation:"), sg.Input(key="main", expand_x=True)],
         [
             sg.Text("Config:"),
             sg.Combo(
-                get_configs(), key="config", expand_x=True, default_value="config.toml"
+                configs, key="config", expand_x=True, default_value=configs[0]
             ),
         ],
         [sg.Submit()],
@@ -634,12 +630,14 @@ def prep_thread(nation_dict, window, main_nation):
 
 
 def report_crash(traceback):
+    anonymized_traceback = cr.anonymize_traceback(traceback, "SwarmUser")
     try:  # make sure a webhook to report the crash to is present otherwise dont bother
         with open("webhook.txt", "r") as f:
             webhook = f.read()
     except Exception:
         create_crash_report(anonymized_traceback)
-    anonymized_traceback = cr.anonymize_traceback(traceback, "SwarmUser")
+        sg.popup(f"Swarm has crashed! Crash report saved as crash-report-{datetime.date.today()}.txt. Please report this to the developer.")
+        return
     LAYOUT = [
         [
             sg.Text(
@@ -655,9 +653,11 @@ def report_crash(traceback):
     match event:
         case "Send":
             cr.upload(webhook, f"Swarm v{VERSION}", anonymized_traceback)
+            sg.popup("Crash report sent.")
             return
         case "Cancel":
             create_crash_report(anonymized_traceback)
+            sg.popup(f"Crash report saved (but not sent) as crash-report-{datetime.date.today()}.txt")
             return
 
 
@@ -666,9 +666,14 @@ def create_crash_report(anonymized_traceback):
         f.write(f"v{VERSION}\n\n{anonymized_traceback}")
 
 
+def check_for_updates():
+    pass
+
+
 if __name__ == "__main__":
     try:
         init()
+        check_for_updates()
         main()
     except Exception:
         report_crash(traceback.format_exc())

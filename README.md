@@ -53,5 +53,5 @@ pls format your code with black beforehand, basically my only requirement ._.
 - [ ] autoupdater
 - [x] migrate from storing data in .json to .toml since it's a little bit more human writable and accessible
 - [x] migrate to a proper venv like poetry
-- [ ] add official support for using multiple different configs
+- [x] add official support for using multiple different configs
 - [ ] add versatility to the config, e.g. storing main nation, jump point, poll id/choice, tagging fields in the config instead of grabbing it from the GUI every time
