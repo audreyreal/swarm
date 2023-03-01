@@ -16,8 +16,15 @@ from components import (
     polls,
     prep,
 )
+from time import time
 
-VERSION = "1.1.1"  # VERY IMPORTANT TO CHANGE EVERY UPDATE!
+#Calculated every time we click the Big Red Button, passed to functions to include with requests in compliance with 1 Mar 2023 rules change
+def userclick():
+    timestamp = int(time() * 1000) #Unix time in millis
+    print(f"DEBUG: {timestamp}")
+    return timestamp
+
+VERSION = "1.1.2"  # VERY IMPORTANT TO CHANGE EVERY UPDATE!
 
 
 def gui():
@@ -166,15 +173,17 @@ def misc_thread(nation_dict, window):
                     return
 
                 case "Login to Nations":
+                    timestamp = userclick()
                     disable_misc_buttons(window)
                     window.perform_long_operation(
-                        lambda: misc.login_loop(nation_dict, headers, window),
+                        lambda: misc.login_loop(nation_dict, headers, window, timestamp),
                         "-DONE LOGGING IN-",
                     )
                 case "Find my WA":
+                    timestamp = userclick()
                     disable_misc_buttons(window)
                     window.perform_long_operation(
-                        lambda: misc.find_wa(nation_dict.keys(), headers),
+                        lambda: misc.find_wa(nation_dict.keys(), headers, timestamp),
                         "-DONE FINDING WA-",
                     )
                 # respond to threads
@@ -196,7 +205,6 @@ def tagging_thread(nation_dict, window):
     while True:
         event, values = window.read()
 
-
 def polls_thread(nation_dict, nations, window, nation_index):
     while True:
         event, values = window.read()
@@ -205,6 +213,7 @@ def polls_thread(nation_dict, nations, window, nation_index):
             break
 
         if event == "-POLLACTION-":  # did u click the button to do the things
+            timestamp = userclick() #Get current unix timestamp for the current click
             main_nation = values["-POLLMAIN-"]
             poll_id = values["-POLL-"]
             choice = values["-POLLOPTION-"]
@@ -222,17 +231,18 @@ def polls_thread(nation_dict, nations, window, nation_index):
                 headers = {
                     "User-Agent": f"Swarm (puppet manager) v{VERSION} devved by nation=sweeze in use by nation={main_nation}",
                 }
+
                 match current_action:  # lets go python 3.10 i love switch statements
                     case "Login":
                         window.perform_long_operation(
                             lambda: polls.login(
-                                current_nation, current_password, headers, poll_id
+                                current_nation, current_password, headers, poll_id, timestamp
                             ),
                             "-LOGIN DONE-",
                         )
                     case "Vote":
                         window.perform_long_operation(
-                            lambda: polls.vote(pin, chk, poll_id, choice, headers),
+                            lambda: polls.vote(pin, chk, poll_id, choice, headers, timestamp),
                             "-VOTE-",
                         )
         # respond to threads!
@@ -275,6 +285,7 @@ def prep_thread(nation_dict, nations, window, nation_index):
             break
 
         if event == "-ACTION-":  # did u click the button to do the things
+            timestamp = userclick()
             main_nation = values["-MAIN-"]
             jp = values["-JP-"]
             current_action = window["-ACTION-"].get_text()
@@ -295,21 +306,21 @@ def prep_thread(nation_dict, nations, window, nation_index):
                     case "Login":
                         window.perform_long_operation(
                             lambda: prep.login(
-                                current_nation, current_password, headers
+                                current_nation, current_password, headers, timestamp
                             ),
                             "-LOGIN DONE-",
                         )
                     case "Apply WA":
                         window.perform_long_operation(
-                            lambda: prep.apply_wa(pin, chk, headers), "-WA DONE-"
+                            lambda: prep.apply_wa(pin, chk, headers, timestamp), "-WA DONE-"
                         )
                     case "Get Local ID":
                         window.perform_long_operation(
-                            lambda: prep.get_local_id(pin, headers), "-LOCALID DONE-"
+                            lambda: prep.get_local_id(pin, headers, timestamp), "-LOCALID DONE-"
                         )
                     case "Move to JP":
                         window.perform_long_operation(
-                            lambda: prep.move_to_jp(jp, pin, local_id, headers),
+                            lambda: prep.move_to_jp(jp, pin, local_id, headers, timestamp),
                             "-MOVED TO JP-",
                         )
         # respond to threads!
