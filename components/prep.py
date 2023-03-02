@@ -12,7 +12,7 @@ import requests
 from bs4 import BeautifulSoup
 
 
-def login(nation, password, headers):
+def login(nation, password, headers, userclick):
     try:
         params = (
             ("nation", nation),
@@ -23,7 +23,7 @@ def login(nation, password, headers):
         return "Out of nations!"
 
     response = requests.get(
-        "https://www.nationstates.net/template-overall=none/page=un/",
+        f"https://www.nationstates.net/template-overall=none/page=un/?userclick={userclick}",
         headers=headers,
         params=params,
     )
@@ -37,7 +37,7 @@ def login(nation, password, headers):
     return (pin, chk)
 
 
-def apply_wa(pin, chk, headers):
+def apply_wa(pin, chk, headers, userclick):
     cookies = {
         "pin": pin,
     }
@@ -45,20 +45,20 @@ def apply_wa(pin, chk, headers):
     data = {"action": "join_UN", "chk": chk, "submit": "1"}
 
     requests.post(
-        "https://www.nationstates.net/template-overall=none/page=UN_status",
+        f"https://www.nationstates.net/template-overall=none/page=UN_status?userclick={userclick}",
         headers=headers,
         cookies=cookies,
         data=data,
     )
 
 
-def get_local_id(pin, headers):
+def get_local_id(pin, headers, userclick):
     cookies = {
         "pin": pin,
     }
 
     response = requests.get(
-        "https://www.nationstates.net/template-overall=none/page=settings",
+        f"https://www.nationstates.net/template-overall=none/page=settings?userclick={userclick}",
         headers=headers,
         cookies=cookies,
     )
@@ -67,7 +67,7 @@ def get_local_id(pin, headers):
     return soup.find("input", {"name": "localid"}).attrs["value"]
 
 
-def move_to_jp(jp, pin, local_id, headers):
+def move_to_jp(jp, pin, local_id, headers, userclick):
     cookies = {
         "pin": pin,
     }
@@ -79,7 +79,7 @@ def move_to_jp(jp, pin, local_id, headers):
     }
 
     requests.post(
-        "https://www.nationstates.net/template-overall=none/page=change_region",
+        f"https://www.nationstates.net/template-overall=none/page=change_region?userclick={userclick}",
         headers=headers,
         cookies=cookies,
         data=data,

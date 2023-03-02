@@ -12,7 +12,7 @@ import time
 import requests
 
 
-def login(nation: str, password: str, headers: dict) -> str:
+def login(nation: str, password: str, headers: dict, userclick: int) -> str:
     """Logs into a nation via the API
 
     Args:
@@ -25,7 +25,7 @@ def login(nation: str, password: str, headers: dict) -> str:
     """
     headers["X-Password"] = password
 
-    url = f"https://www.nationstates.net/cgi-bin/api.cgi?nation={nation}&q=ping"
+    url = f"https://www.nationstates.net/cgi-bin/api.cgi?nation={nation}&q=ping&userclick={userclick}"
     try:
         requests.get(url, headers=headers).raise_for_status()
     except:
@@ -33,7 +33,7 @@ def login(nation: str, password: str, headers: dict) -> str:
     return f"Successfully logged in to {nation}."
 
 
-def login_loop(nation_dictionary: dict, headers: dict, window) -> str:
+def login_loop(nation_dictionary: dict, headers: dict, window, userclick: int) -> str:
     """Logs into all of your nations via the API
 
     Args:
@@ -45,13 +45,13 @@ def login_loop(nation_dictionary: dict, headers: dict, window) -> str:
         str: When you're done logging into all the nations.
     """
     for nation, password in nation_dictionary.items():
-        status = login(nation, password, headers)
+        status = login(nation, password, headers, userclick)  # Pass-through userclick
         window["-MISCOUT-"].update(status)
         time.sleep(0.6)
     return "Done logging into nations"  # End of login section
 
 
-def find_wa(nations: list, headers: dict) -> str or None:
+def find_wa(nations: list, headers: dict, userclick: int) -> str or None:
     """Finds the WA nation in a list of nations.
 
     Args:
@@ -61,7 +61,7 @@ def find_wa(nations: list, headers: dict) -> str or None:
     Returns:
         str or None: str is the WA nation if it's found, None if it isn't.
     """
-    url = "https://www.nationstates.net/cgi-bin/api.cgi?wa=1&q=members"
+    url = f"https://www.nationstates.net/cgi-bin/api.cgi?wa=1&q=members&userclick={userclick}"
     wa_list = requests.get(url, headers=headers).text
     for nation in nations:
         nation = nation.replace(" ", "_").lower()

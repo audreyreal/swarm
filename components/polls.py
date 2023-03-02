@@ -12,7 +12,7 @@ import requests
 from bs4 import BeautifulSoup
 
 
-def login(nation, password, headers, poll_id):
+def login(nation, password, headers, poll_id, userclick):
     params = (
         ("nation", nation),
         ("password", password),
@@ -20,7 +20,7 @@ def login(nation, password, headers, poll_id):
     )
 
     response = requests.get(
-        f"https://www.nationstates.net/template-overall=none/page=poll/p={poll_id}",
+        f"https://www.nationstates.net/template-overall=none/page=poll/p={poll_id}&userclick={userclick}",
         headers=headers,
         params=params,
     )
@@ -34,7 +34,7 @@ def login(nation, password, headers, poll_id):
     return (pin, chk)
 
 
-def vote(pin, chk, poll_id, choice, headers):
+def vote(pin, chk, poll_id, choice, headers, userclick):
     cookies = {
         "pin": pin,
     }
@@ -42,7 +42,7 @@ def vote(pin, chk, poll_id, choice, headers):
     data = {"pollid": poll_id, "chk": chk, "q1": choice, "poll_submit": "1"}
 
     requests.post(
-        "https://www.nationstates.net/template-overall=none/page=poll/p=181445",
+        f"https://www.nationstates.net/template-overall=none/page=poll/p=181445&userclick={userclick}",
         headers=headers,
         cookies=cookies,
         data=data,
