@@ -42,8 +42,8 @@ def apply_wa(pin, chk, headers, userclick):
         "pin": pin,
     }
 
-    #data = {"action": "join_UN", "chk": chk, "submit": "1"}
-    data = {"action": "join_UN", "chk": chk, "resend": "1"} #Resend WA application
+    # data = {"action": "join_UN", "chk": chk, "submit": "1"}
+    data = {"action": "join_UN", "chk": chk, "resend": "1"}  # Resend WA application
 
     requests.post(
         f"https://www.nationstates.net/template-overall=none/page=UN_status?userclick={userclick}",

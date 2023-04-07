@@ -18,13 +18,16 @@ from components import (
 )
 from time import time
 
-#Calculated every time we click the Big Red Button, passed to functions to include with requests in compliance with 1 Mar 2023 rules change
+
+# Calculated every time we click the Big Red Button, passed to functions to include with requests in compliance with 1 Mar 2023 rules change
 def userclick():
-    timestamp = int(time() * 1000) #Unix time in millis
-#    print(f"DEBUG: {timestamp}")
+    timestamp = int(time() * 1000)  # Unix time in millis
+    #    print(f"DEBUG: {timestamp}")
     return timestamp
 
+
 VERSION = "1.1.3"  # VERY IMPORTANT TO CHANGE EVERY UPDATE!
+
 
 def gui():
     sg.theme("Reddit")
@@ -37,7 +40,9 @@ def gui():
     try:
         with open("components/swarm.png", "rb") as f:
             swarm_image = base64.b64encode(f.read())
-    except FileNotFoundError:  # in binaries this will not work but if i just download the image datauri it will
+    except (
+        FileNotFoundError
+    ):  # in binaries this will not work but if i just download the image datauri it will
         swarm_image = requests.get(
             "https://gist.githubusercontent.com/sw33ze/c0ec6fca37a69ff1a90f6847affd3c5f/raw/818c73cf742e1356018cf3a07806673472cba75b/swarm.png"
         ).content
@@ -51,7 +56,7 @@ def gui():
             sg.Button("Login", key="-ACTION-", size=(36, 12)),
         ],
         [
-            sg.Button("Skip", key="-SKIP-", size=(36,12)),
+            sg.Button("Skip", key="-SKIP-", size=(36, 12)),
         ],
     ]
 
@@ -86,14 +91,12 @@ def gui():
 
     move_layout = [
         [sg.Text("Main Nation:"), sg.Input(key="-MOVEMAIN-")],
-        [sg.Text("JP:"), sg.Input(key="-MOVEJP-",size=(38,1))],
+        [sg.Text("JP:"), sg.Input(key="-MOVEJP-", size=(38, 1))],
         [sg.Text("Not logged into any nation!", key="-MOVEOUT-")],
         [
-            sg.Button("Login",key="-MOVEACTION-", size=(36,12)),
+            sg.Button("Login", key="-MOVEACTION-", size=(36, 12)),
         ],
-        [
-            sg.Button("Skip", key="-MOVESKIP-")
-        ],
+        [sg.Button("Skip", key="-MOVESKIP-")],
     ]
 
     layout = [
@@ -104,7 +107,7 @@ def gui():
                     [sg.Tab("Tagging", tagging_layout, disabled=True)],
                     [sg.Tab("Polls", poll_layout)],
                     [sg.Tab("Misc", misc_layout)],
-                    [sg.Tab("Mover",move_layout)],
+                    [sg.Tab("Mover", move_layout)],
                 ],
                 enable_events=True,
                 key="-CURRENT TAB-",
@@ -194,7 +197,9 @@ def misc_thread(nation_dict, window):
                     timestamp = userclick()
                     disable_misc_buttons(window)
                     window.perform_long_operation(
-                        lambda: misc.login_loop(nation_dict, headers, window, timestamp),
+                        lambda: misc.login_loop(
+                            nation_dict, headers, window, timestamp
+                        ),
                         "-DONE LOGGING IN-",
                     )
                 case "Find my WA":
@@ -223,6 +228,7 @@ def tagging_thread(nation_dict, window):
     while True:
         event, values = window.read()
 
+
 def polls_thread(nation_dict, nations, window, nation_index):
     while True:
         event, values = window.read()
@@ -231,7 +237,7 @@ def polls_thread(nation_dict, nations, window, nation_index):
             break
 
         if event == "-POLLACTION-":  # did u click the button to do the things
-            timestamp = userclick() #Get current unix timestamp for the current click
+            timestamp = userclick()  # Get current unix timestamp for the current click
             main_nation = values["-POLLMAIN-"]
             poll_id = values["-POLL-"]
             choice = values["-POLLOPTION-"]
@@ -254,13 +260,19 @@ def polls_thread(nation_dict, nations, window, nation_index):
                     case "Login":
                         window.perform_long_operation(
                             lambda: polls.login(
-                                current_nation, current_password, headers, poll_id, timestamp
+                                current_nation,
+                                current_password,
+                                headers,
+                                poll_id,
+                                timestamp,
                             ),
                             "-LOGIN DONE-",
                         )
                     case "Vote":
                         window.perform_long_operation(
-                            lambda: polls.vote(pin, chk, poll_id, choice, headers, timestamp),
+                            lambda: polls.vote(
+                                pin, chk, poll_id, choice, headers, timestamp
+                            ),
                             "-VOTE-",
                         )
         # respond to threads!
@@ -293,6 +305,7 @@ def polls_thread(nation_dict, nations, window, nation_index):
                         window["-POLLACTION-"].update(disabled=False)
                         return
             window["-POLLACTION-"].update(disabled=False)
+
 
 def move_thread(nation_dict, nations, window, nation_index):
     while True:
@@ -327,19 +340,22 @@ def move_thread(nation_dict, nations, window, nation_index):
                             ),
                             "-LOGIN DONE-",
                         )
-                    #case "Apply WA":
+                    # case "Apply WA":
                     #    window.perform_long_operation(
                     #        lambda: prep.apply_wa(pin, chk, headers), "-WA DONE-"
                     #    )
                     case "Get Local ID":
-                       # print("FETCH LOCAL ID")
+                        # print("FETCH LOCAL ID")
                         window.perform_long_operation(
-                            lambda: prep.get_local_id(pin, headers, timestamp), "-LOCALID DONE-"
+                            lambda: prep.get_local_id(pin, headers, timestamp),
+                            "-LOCALID DONE-",
                         )
                     case "Move to JP":
-                        #print("MOVE TO JP")
+                        # print("MOVE TO JP")
                         window.perform_long_operation(
-                            lambda: prep.move_to_jp(jp, pin, local_id, headers, timestamp),
+                            lambda: prep.move_to_jp(
+                                jp, pin, local_id, headers, timestamp
+                            ),
                             "-MOVED TO JP-",
                         )
         # respond to threads!
@@ -359,12 +375,12 @@ def move_thread(nation_dict, nations, window, nation_index):
                         window["-MOVEOUT-"].update(f"Logged in: {current_nation}")
                         pin = values["-LOGIN DONE-"][0]
                         chk = values["-LOGIN DONE-"][1]
-#                        window["-MOVEACTION-"].update("Apply WA")
-                        
-                        window["-MOVEACTION-"].update("Get Local ID")
-                        #print("MOVED")
+                        #                        window["-MOVEACTION-"].update("Apply WA")
 
-                #case "-WA DONE-":
+                        window["-MOVEACTION-"].update("Get Local ID")
+                        # print("MOVED")
+
+                # case "-WA DONE-":
                 #    window["-OUT-"].update(f"Applied: {current_nation}")
                 #    window["-ACTION-"].update("Get Local ID")
 
@@ -372,14 +388,14 @@ def move_thread(nation_dict, nations, window, nation_index):
                     window["-MOVEOUT-"].update(f"Local ID: {current_nation}")
                     local_id = values["-LOCALID DONE-"]
                     window["-MOVEACTION-"].update("Move to JP")
-                    #print("LOCAL DONE")
+                    # print("LOCAL DONE")
 
                 case "-MOVED TO JP-":
                     window["-MOVEOUT-"].update(f"Moved: {current_nation}")
                     nation_index += 1
                     window[polls_tab].update(disabled=False)
                     window["-MOVEACTION-"].update("Login")
-                    #print("MOVED")
+                    # print("MOVED")
 
                 case "-CURRENT TAB-":
                     if values["-CURRENT TAB-"] != "Prep":
@@ -424,15 +440,19 @@ def prep_thread(nation_dict, nations, window, nation_index):
                         )
                     case "Apply WA":
                         window.perform_long_operation(
-                            lambda: prep.apply_wa(pin, chk, headers, timestamp), "-WA DONE-"
+                            lambda: prep.apply_wa(pin, chk, headers, timestamp),
+                            "-WA DONE-",
                         )
                     case "Get Local ID":
                         window.perform_long_operation(
-                            lambda: prep.get_local_id(pin, headers, timestamp), "-LOCALID DONE-"
+                            lambda: prep.get_local_id(pin, headers, timestamp),
+                            "-LOCALID DONE-",
                         )
                     case "Move to JP":
                         window.perform_long_operation(
-                            lambda: prep.move_to_jp(jp, pin, local_id, headers, timestamp),
+                            lambda: prep.move_to_jp(
+                                jp, pin, local_id, headers, timestamp
+                            ),
                             "-MOVED TO JP-",
                         )
         # respond to threads!
