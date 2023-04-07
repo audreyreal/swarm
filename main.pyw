@@ -21,7 +21,7 @@ from time import time
 #Calculated every time we click the Big Red Button, passed to functions to include with requests in compliance with 1 Mar 2023 rules change
 def userclick():
     timestamp = int(time() * 1000) #Unix time in millis
-    print(f"DEBUG: {timestamp}")
+#    print(f"DEBUG: {timestamp}")
     return timestamp
 
 VERSION = "1.1.2a"  # VERY IMPORTANT TO CHANGE EVERY UPDATE!
@@ -302,6 +302,7 @@ def move_thread(nation_dict, nations, window, nation_index):
             break
 
         if event == "-MOVEACTION-":  # did u click the button to do the things
+            timestamp = userclick()
             main_nation = values["-MOVEMAIN-"]
             jp = values["-MOVEJP-"]
             current_action = window["-MOVEACTION-"].get_text()
@@ -322,7 +323,7 @@ def move_thread(nation_dict, nations, window, nation_index):
                     case "Login":
                         window.perform_long_operation(
                             lambda: prep.login(
-                                current_nation, current_password, headers
+                                current_nation, current_password, headers, timestamp
                             ),
                             "-LOGIN DONE-",
                         )
@@ -333,12 +334,12 @@ def move_thread(nation_dict, nations, window, nation_index):
                     case "Get Local ID":
                        # print("FETCH LOCAL ID")
                         window.perform_long_operation(
-                            lambda: prep.get_local_id(pin, headers), "-LOCALID DONE-"
+                            lambda: prep.get_local_id(pin, headers, timestamp), "-LOCALID DONE-"
                         )
                     case "Move to JP":
                         #print("MOVE TO JP")
                         window.perform_long_operation(
-                            lambda: prep.move_to_jp(jp, pin, local_id, headers),
+                            lambda: prep.move_to_jp(jp, pin, local_id, headers, timestamp),
                             "-MOVED TO JP-",
                         )
         # respond to threads!
@@ -384,6 +385,7 @@ def move_thread(nation_dict, nations, window, nation_index):
                     if values["-CURRENT TAB-"] != "Prep":
                         window["-MOVEACTION-"].update(disabled=False)
                         return
+
             window["-MOVEACTION-"].update(disabled=False)
 
 
