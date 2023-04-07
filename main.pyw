@@ -24,7 +24,7 @@ def userclick():
 #    print(f"DEBUG: {timestamp}")
     return timestamp
 
-VERSION = "1.1.2a"  # VERY IMPORTANT TO CHANGE EVERY UPDATE!
+VERSION = "1.1.3"  # VERY IMPORTANT TO CHANGE EVERY UPDATE!
 
 def gui():
     sg.theme("Reddit")
