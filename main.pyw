@@ -18,13 +18,15 @@ from components import (
 )
 from time import time
 
-#Calculated every time we click the Big Red Button, passed to functions to include with requests in compliance with 1 Mar 2023 rules change
+
+# Calculated every time we click the Big Red Button, passed to functions to include with requests in compliance with 1 Mar 2023 rules change
 def userclick():
-    timestamp = int(time() * 1000) #Unix time in millis
-    print(f"DEBUG: {timestamp}")
+    timestamp = int(time() * 1000)  # Unix time in millis
+    #    print(f"DEBUG: {timestamp}")
     return timestamp
 
-VERSION = "1.1.2"  # VERY IMPORTANT TO CHANGE EVERY UPDATE!
+
+VERSION = "1.1.3"  # VERY IMPORTANT TO CHANGE EVERY UPDATE!
 
 
 def gui():
@@ -38,9 +40,11 @@ def gui():
     try:
         with open("components/swarm.png", "rb") as f:
             swarm_image = base64.b64encode(f.read())
-    except FileNotFoundError:  # in binaries this will not work but if i just download the image datauri it will
+    except (
+        FileNotFoundError
+    ):  # in binaries this will not work but if i just download the image datauri it will
         swarm_image = requests.get(
-            "https://gist.githubusercontent.com/sw33ze/c0ec6fca37a69ff1a90f6847affd3c5f/raw/818c73cf742e1356018cf3a07806673472cba75b/swarm.png"
+            "https://gist.githubusercontent.com/audreyreal/c0ec6fca37a69ff1a90f6847affd3c5f/raw/818c73cf742e1356018cf3a07806673472cba75b/swarm.png"
         ).content
 
     # define layouts
@@ -50,6 +54,9 @@ def gui():
         [sg.Text("Not logged into any nation!", key="-OUT-")],
         [
             sg.Button("Login", key="-ACTION-", size=(36, 12)),
+        ],
+        [
+            sg.Button("Skip", key="-SKIP-", size=(36, 12)),
         ],
     ]
 
@@ -82,6 +89,16 @@ def gui():
         [sg.Button("Find my WA", size=(35, 6))],
     ]
 
+    move_layout = [
+        [sg.Text("Main Nation:"), sg.Input(key="-MOVEMAIN-")],
+        [sg.Text("JP:"), sg.Input(key="-MOVEJP-", size=(38, 1))],
+        [sg.Text("Not logged into any nation!", key="-MOVEOUT-")],
+        [
+            sg.Button("Login", key="-MOVEACTION-", size=(36, 12)),
+        ],
+        [sg.Button("Skip", key="-MOVESKIP-")],
+    ]
+
     layout = [
         [
             sg.TabGroup(
@@ -90,6 +107,7 @@ def gui():
                     [sg.Tab("Tagging", tagging_layout, disabled=True)],
                     [sg.Tab("Polls", poll_layout)],
                     [sg.Tab("Misc", misc_layout)],
+                    [sg.Tab("Mover", move_layout)],
                 ],
                 enable_events=True,
                 key="-CURRENT TAB-",
@@ -97,7 +115,7 @@ def gui():
         ]
     ]
 
-    return sg.Window("Swarm", layout, icon=swarm_image, size=(325, 330))
+    return sg.Window("Swarm", layout, icon=swarm_image, size=(355, 330))
 
 
 def main():
@@ -108,7 +126,7 @@ def main():
         with open("config.json", "w", encoding="utf-8") as json_file:
             json_file.write(
                 requests.get(
-                    "https://gist.githubusercontent.com/sw33ze/568ad00257200f0649d9441a1ff032a0/raw/df3628dec0238bf10e6bd8419a47bd69079882e1/config.json"
+                    "https://gist.githubusercontent.com/audreyreal/568ad00257200f0649d9441a1ff032a0/raw/df3628dec0238bf10e6bd8419a47bd69079882e1/config.json"
                 ).text
             )
         sg.popup_error("No JSON File! Template created, fill it in with your nations!")
@@ -135,6 +153,9 @@ def main():
                     polls_thread(nation_dict, nations, window, nation_index)
                 case "Misc":
                     misc_thread(nation_dict, window)
+                case "Mover":
+                    move_thread(nation_dict, nations, window, nation_index)
+
     except Exception as e:
         tb = traceback.format_exc()
         sg.Print(e, tb)
@@ -176,7 +197,9 @@ def misc_thread(nation_dict, window):
                     timestamp = userclick()
                     disable_misc_buttons(window)
                     window.perform_long_operation(
-                        lambda: misc.login_loop(nation_dict, headers, window, timestamp),
+                        lambda: misc.login_loop(
+                            nation_dict, headers, window, timestamp
+                        ),
                         "-DONE LOGGING IN-",
                     )
                 case "Find my WA":
@@ -205,6 +228,7 @@ def tagging_thread(nation_dict, window):
     while True:
         event, values = window.read()
 
+
 def polls_thread(nation_dict, nations, window, nation_index):
     while True:
         event, values = window.read()
@@ -213,7 +237,7 @@ def polls_thread(nation_dict, nations, window, nation_index):
             break
 
         if event == "-POLLACTION-":  # did u click the button to do the things
-            timestamp = userclick() #Get current unix timestamp for the current click
+            timestamp = userclick()  # Get current unix timestamp for the current click
             main_nation = values["-POLLMAIN-"]
             poll_id = values["-POLL-"]
             choice = values["-POLLOPTION-"]
@@ -236,13 +260,19 @@ def polls_thread(nation_dict, nations, window, nation_index):
                     case "Login":
                         window.perform_long_operation(
                             lambda: polls.login(
-                                current_nation, current_password, headers, poll_id, timestamp
+                                current_nation,
+                                current_password,
+                                headers,
+                                poll_id,
+                                timestamp,
                             ),
                             "-LOGIN DONE-",
                         )
                     case "Vote":
                         window.perform_long_operation(
-                            lambda: polls.vote(pin, chk, poll_id, choice, headers, timestamp),
+                            lambda: polls.vote(
+                                pin, chk, poll_id, choice, headers, timestamp
+                            ),
                             "-VOTE-",
                         )
         # respond to threads!
@@ -275,6 +305,104 @@ def polls_thread(nation_dict, nations, window, nation_index):
                         window["-POLLACTION-"].update(disabled=False)
                         return
             window["-POLLACTION-"].update(disabled=False)
+
+
+def move_thread(nation_dict, nations, window, nation_index):
+    while True:
+        event, values = window.read()
+        if event == sg.WIN_CLOSED:  # da window is closed
+            window.close()
+            break
+
+        if event == "-MOVEACTION-":  # did u click the button to do the things
+            timestamp = userclick()
+            main_nation = values["-MOVEMAIN-"]
+            jp = values["-MOVEJP-"]
+            current_action = window["-MOVEACTION-"].get_text()
+            try:
+                current_nation = nations[nation_index]
+            except IndexError:
+                window["-MOVEOUT-"].update("No more nations!")
+                return
+            current_password = nation_dict[current_nation]
+            if main_nation == "" or jp == "":
+                sg.popup("Please enter a nation and jump point.")
+            else:
+                window["-MOVEACTION-"].update(disabled=True)
+                headers = {
+                    "User-Agent": f"Swarm (puppet manager) v{VERSION} devved by nation=sweeze in use by nation={main_nation}",
+                }
+                match current_action:  # lets go python 3.10 i love switch statements
+                    case "Login":
+                        window.perform_long_operation(
+                            lambda: prep.login(
+                                current_nation, current_password, headers, timestamp
+                            ),
+                            "-LOGIN DONE-",
+                        )
+                    # case "Apply WA":
+                    #    window.perform_long_operation(
+                    #        lambda: prep.apply_wa(pin, chk, headers), "-WA DONE-"
+                    #    )
+                    case "Get Local ID":
+                        # print("FETCH LOCAL ID")
+                        window.perform_long_operation(
+                            lambda: prep.get_local_id(pin, headers, timestamp),
+                            "-LOCALID DONE-",
+                        )
+                    case "Move to JP":
+                        # print("MOVE TO JP")
+                        window.perform_long_operation(
+                            lambda: prep.move_to_jp(
+                                jp, pin, local_id, headers, timestamp
+                            ),
+                            "-MOVED TO JP-",
+                        )
+        # respond to threads!
+        elif event is not None:
+            match event:
+                case "-LOGIN DONE-":
+                    if values["-LOGIN DONE-"] == "Out of nations!":
+                        window["-MOVEOUT-"].update("No more nations!")
+                    elif values["-LOGIN DONE-"] == "Login failed!":
+                        window["-MOVEOUT-"].update("Login failed!")
+                        nation_index += 1
+                    else:
+                        polls_tab = window["-CURRENT TAB-"].find_key_from_tab_name(
+                            "Polls"
+                        )
+                        window[polls_tab].update(disabled=True)
+                        window["-MOVEOUT-"].update(f"Logged in: {current_nation}")
+                        pin = values["-LOGIN DONE-"][0]
+                        chk = values["-LOGIN DONE-"][1]
+                        #                        window["-MOVEACTION-"].update("Apply WA")
+
+                        window["-MOVEACTION-"].update("Get Local ID")
+                        # print("MOVED")
+
+                # case "-WA DONE-":
+                #    window["-OUT-"].update(f"Applied: {current_nation}")
+                #    window["-ACTION-"].update("Get Local ID")
+
+                case "-LOCALID DONE-":
+                    window["-MOVEOUT-"].update(f"Local ID: {current_nation}")
+                    local_id = values["-LOCALID DONE-"]
+                    window["-MOVEACTION-"].update("Move to JP")
+                    # print("LOCAL DONE")
+
+                case "-MOVED TO JP-":
+                    window["-MOVEOUT-"].update(f"Moved: {current_nation}")
+                    nation_index += 1
+                    window[polls_tab].update(disabled=False)
+                    window["-MOVEACTION-"].update("Login")
+                    # print("MOVED")
+
+                case "-CURRENT TAB-":
+                    if values["-CURRENT TAB-"] != "Prep":
+                        window["-MOVEACTION-"].update(disabled=False)
+                        return
+
+            window["-MOVEACTION-"].update(disabled=False)
 
 
 def prep_thread(nation_dict, nations, window, nation_index):
@@ -312,15 +440,19 @@ def prep_thread(nation_dict, nations, window, nation_index):
                         )
                     case "Apply WA":
                         window.perform_long_operation(
-                            lambda: prep.apply_wa(pin, chk, headers, timestamp), "-WA DONE-"
+                            lambda: prep.apply_wa(pin, chk, headers, timestamp),
+                            "-WA DONE-",
                         )
                     case "Get Local ID":
                         window.perform_long_operation(
-                            lambda: prep.get_local_id(pin, headers, timestamp), "-LOCALID DONE-"
+                            lambda: prep.get_local_id(pin, headers, timestamp),
+                            "-LOCALID DONE-",
                         )
                     case "Move to JP":
                         window.perform_long_operation(
-                            lambda: prep.move_to_jp(jp, pin, local_id, headers, timestamp),
+                            lambda: prep.move_to_jp(
+                                jp, pin, local_id, headers, timestamp
+                            ),
                             "-MOVED TO JP-",
                         )
         # respond to threads!
