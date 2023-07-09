@@ -44,7 +44,7 @@ def gui():
         FileNotFoundError
     ):  # in binaries this will not work but if i just download the image datauri it will
         swarm_image = requests.get(
-            "https://gist.githubusercontent.com/sw33ze/c0ec6fca37a69ff1a90f6847affd3c5f/raw/818c73cf742e1356018cf3a07806673472cba75b/swarm.png"
+            "https://gist.githubusercontent.com/audreyreal/c0ec6fca37a69ff1a90f6847affd3c5f/raw/818c73cf742e1356018cf3a07806673472cba75b/swarm.png"
         ).content
 
     # define layouts
@@ -126,7 +126,7 @@ def main():
         with open("config.json", "w", encoding="utf-8") as json_file:
             json_file.write(
                 requests.get(
-                    "https://gist.githubusercontent.com/sw33ze/568ad00257200f0649d9441a1ff032a0/raw/df3628dec0238bf10e6bd8419a47bd69079882e1/config.json"
+                    "https://gist.githubusercontent.com/audreyreal/568ad00257200f0649d9441a1ff032a0/raw/df3628dec0238bf10e6bd8419a47bd69079882e1/config.json"
                 ).text
             )
         sg.popup_error("No JSON File! Template created, fill it in with your nations!")
